@@ -1,23 +1,38 @@
-import { JEWELRY_CATEGORIES } from '../../../entities/jewelry/model/jewelry'
+import { useCatalog } from '../../../data/useCatalog'
+import { JEWELRY_CATEGORIES, type CategoryFilterId } from '../../../entities/jewelry/model/jewelry'
 import classes from './CategoryFilter.module.scss'
 
 type CategoryFilterProps = {
-  selectedCategory: string
-  onSelect: (category: string) => void
+  selectedCategory: CategoryFilterId
+  onSelect: (category: CategoryFilterId) => void
 }
 
 export function CategoryFilter({ selectedCategory, onSelect }: CategoryFilterProps) {
+  const { catalog } = useCatalog()
+  const categories = catalog
+    ? [
+        { id: 'all', label: 'Все' },
+        ...catalog.entries
+          .filter(
+            (entry) => entry.kind === 'type' && (entry.enabled || entry.id === selectedCategory),
+          )
+          .map((entry) => ({
+            id: entry.id,
+            label: entry.label + (entry.enabled ? '' : ' (удалён)'),
+          })),
+      ]
+    : JEWELRY_CATEGORIES
   return (
     <nav className={classes.filters} aria-label="Категории коллекции">
-      {JEWELRY_CATEGORIES.map((category) => (
+      {categories.map((category) => (
         <button
-          key={category}
+          key={category.id}
           type="button"
-          className={`${classes.filter} ${selectedCategory === category ? classes.selected : ''}`}
-          aria-pressed={selectedCategory === category}
-          onClick={() => onSelect(category)}
+          className={`${classes.filter} ${selectedCategory === category.id ? classes.selected : ''}`}
+          aria-pressed={selectedCategory === category.id}
+          onClick={() => onSelect(category.id)}
         >
-          {category}
+          {category.label}
         </button>
       ))}
     </nav>

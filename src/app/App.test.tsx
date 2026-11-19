@@ -1,3 +1,4 @@
+import { getAppearance } from '../data/catalog-repository'
 import { StrictMode } from 'react'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
@@ -60,6 +61,12 @@ describe('foundation app', () => {
   it('filters the demo collection by category', () => {
     renderApp()
 
+    expect(screen.queryByRole('button', { name: 'Серьги' })).not.toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Коллекция' }))
+    expect(screen.getByRole('button', { name: 'Коллекция' })).toHaveAttribute(
+      'aria-expanded',
+      'true',
+    )
     fireEvent.click(screen.getByRole('button', { name: 'Серьги' }))
 
     expect(screen.getByText('Серьги «Лепесток»')).toBeInTheDocument()
@@ -72,7 +79,7 @@ describe('foundation app', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Настройки' }))
 
     await waitFor(() => expect(window.location.hash).toBe('#/settings'))
-    expect(screen.getByRole('heading', { name: 'Настройки' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Настройки' })).toBeInTheDocument()
   })
 
   it('opens a settings hash URL directly', async () => {
@@ -122,6 +129,7 @@ describe('foundation app', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Настройки' }))
     await screen.findByRole('heading', { name: 'Настройки' })
+    await waitFor(() => expect(screen.getByRole('radio', { name: 'Тёмная' })).toBeEnabled())
     fireEvent.click(screen.getByRole('radio', { name: 'Тёмная' }))
 
     await waitFor(() => {
@@ -182,25 +190,29 @@ describe('foundation regressions', () => {
     expect(document.documentElement.dataset.mantineColorScheme).toBe('dark')
     fireEvent.click(screen.getByRole('button', { name: 'Настройки' }))
     await screen.findByRole('heading', { name: 'Настройки' })
+    await waitFor(() => expect(screen.getByRole('radio', { name: 'Светлая' })).toBeEnabled())
     fireEvent.click(screen.getByRole('radio', { name: 'Светлая' }))
     setSystemColorScheme(false)
     setSystemColorScheme(true)
     await waitFor(() => expect(document.documentElement.dataset.mantineColorScheme).toBe('light'))
     expect(document.documentElement.dataset.theme).toBe('light')
   })
-  it('reports failed saves and can retry without losing the chosen appearance', async () => {
+  it('keeps canonical settings when the cache fails and can retry the cache', async () => {
     renderApp()
     fireEvent.click(screen.getByRole('button', { name: 'Настройки' }))
     await screen.findByRole('heading', { name: 'Настройки' })
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Зелёный' })).toBeEnabled())
     vi.spyOn(console, 'warn').mockImplementation(() => {})
     const save = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
       throw new DOMException('Unavailable', 'QuotaExceededError')
     })
     fireEvent.click(screen.getByRole('button', { name: 'Зелёный' }))
-    expect(screen.getByText('Настройки не сохранены')).toBeInTheDocument()
+    await screen.findByText('Оформление сохранено в базе')
+    expect((await getAppearance()).accentTone).toBe('forest')
+    expect(screen.queryByText('Настройки не сохранены')).not.toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Зелёный' })).toHaveAttribute('aria-pressed', 'true')
     save.mockRestore()
-    fireEvent.click(screen.getByRole('button', { name: 'Повторить сохранение' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Повторить обновление кэша' }))
     expect(screen.queryByText('Настройки не сохранены')).not.toBeInTheDocument()
     expect(localStorage.getItem('jewellery-box:accent-tone')).toBe('forest')
   })
@@ -213,6 +225,14 @@ describe('foundation regressions', () => {
     menu.focus()
     fireEvent.click(menu)
     await waitFor(() => expect(screen.getByRole('button', { name: 'Закрыть меню' })).toHaveFocus())
+    expect(screen.queryByRole('button', { name: 'Серьги' })).not.toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Коллекция' }))
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'Коллекция' })).toHaveAttribute(
+        'aria-expanded',
+        'true',
+      ),
+    )
     fireEvent.click(screen.getByRole('button', { name: 'Серьги' }))
     await screen.findByText('Серьги «Лепесток»')
     expect(screen.queryByText('Кольцо «Роза»')).not.toBeInTheDocument()

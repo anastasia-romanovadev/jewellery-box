@@ -1,11 +1,8 @@
-import { useLayoutEffect, useState } from 'react'
+import { useLayoutEffect } from 'react'
+import { useStoredAppearance } from '../../../data/useStoredAppearance'
 import { useMediaQuery } from '@mantine/hooks'
 import { ACCENT_OPTIONS, type AccentTone } from '../../../shared/config/appearance'
-import {
-  readAppearanceCache,
-  synchronizeAppearanceCache,
-  type AppearanceSettings,
-} from './appearance-cache'
+import { readAppearanceCache } from './appearance-cache'
 import type { ThemeMode } from '../../../shared/config/appearance'
 
 export function applyAppearance(themeMode: ThemeMode, accentTone: AccentTone) {
@@ -34,29 +31,28 @@ export function initializeAppearance() {
 }
 
 export function useAppearanceSettings() {
-  const [settings, setSettings] = useState(readAppearanceCache)
-  const [saveFailed, setSaveFailed] = useState(false)
-  const { themeMode, accentTone } = settings
+  const stored = useStoredAppearance()
+  const { themeMode, accentTone } = stored.settings
   const systemDark = useMediaQuery('(prefers-color-scheme: dark)', undefined, {
     getInitialValueInEffect: false,
   })
   const colorScheme: 'light' | 'dark' =
     themeMode === 'dark' || (themeMode === 'system' && systemDark) ? 'dark' : 'light'
-  function updateSettings(update: Partial<AppearanceSettings>) {
-    const next = { ...settings, ...update }
-    setSettings(next)
-    setSaveFailed(!synchronizeAppearanceCache(next))
-  }
   useLayoutEffect(() => {
     applyAppearance(colorScheme, accentTone)
   }, [colorScheme, accentTone])
   return {
     colorScheme,
     themeMode,
-    setThemeMode: (value: ThemeMode) => updateSettings({ themeMode: value }),
     accentTone,
-    setAccentTone: (value: AccentTone) => updateSettings({ accentTone: value }),
-    saveFailed,
-    retrySave: () => setSaveFailed(!synchronizeAppearanceCache(settings)),
+    setThemeMode: (value: ThemeMode) => stored.update({ themeMode: value }),
+    setAccentTone: (value: AccentTone) => stored.update({ accentTone: value }),
+    disabled: stored.disabled,
+    saveFailed: Boolean(stored.error),
+    storageError: stored.error,
+    cacheFailed: stored.cacheFailed,
+    retrySave: stored.retry,
+    retryCache: stored.retryCache,
+    reloadSettings: stored.reload,
   }
 }

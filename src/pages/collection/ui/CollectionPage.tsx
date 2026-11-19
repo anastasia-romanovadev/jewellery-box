@@ -1,9 +1,10 @@
+import type { CategoryFilterId } from '../../../entities/jewelry/model/jewelry'
 import { InstallGuide } from '../../../features/install-guide/ui/InstallGuide'
 import { CollectionGallery } from '../../../widgets/collection-gallery/ui/CollectionGallery'
 import classes from './CollectionPage.module.scss'
 
 type CollectionPageProps = {
-  selectedCategory: string
+  selectedCategory: CategoryFilterId
   isInstallGuideVisible: boolean
   onDismissInstallGuide: () => void
 }

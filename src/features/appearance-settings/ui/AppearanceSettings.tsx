@@ -8,6 +8,7 @@ import { ChoiceGroup } from './ChoiceGroup'
 import classes from './AppearanceSettings.module.scss'
 
 type AppearanceSettingsProps = {
+  disabled?: boolean
   themeMode: ThemeMode
   onThemeChange: (value: ThemeMode) => void
   accentTone: AccentTone
@@ -15,13 +16,14 @@ type AppearanceSettingsProps = {
 }
 
 export function AppearanceSettings({
+  disabled = false,
   themeMode,
   onThemeChange,
   accentTone,
   onAccentChange,
 }: AppearanceSettingsProps) {
   return (
-    <div className={classes.grid}>
+    <fieldset className={classes.grid} disabled={disabled} aria-label="Оформление">
       <section className={classes.group} aria-labelledby="theme-setting-title">
         <h2 id="theme-setting-title" className={classes.title}>
           Тема
@@ -37,16 +39,6 @@ export function AppearanceSettings({
             }
           }}
         />
-      </section>
-
-      <section className={classes.group} aria-labelledby="template-setting-title">
-        <h2 id="template-setting-title" className={classes.title}>
-          Шаблон
-        </h2>
-        <p>
-          Шаблон определяет общие поля и поля по типам изделий для новых карточек. Редактор пока
-          недоступен.
-        </p>
       </section>
 
       <section className={classes.group} aria-labelledby="accent-setting-title">
@@ -68,6 +60,6 @@ export function AppearanceSettings({
           ))}
         </div>
       </section>
-    </div>
+    </fieldset>
   )
 }

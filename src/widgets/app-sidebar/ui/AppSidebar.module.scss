@@ -126,3 +126,14 @@
     transition: none;
   }
 }
+
+.categories {
+  padding-left: var(--space-4);
+  min-width: 0;
+}
+.chevron {
+  flex-shrink: 0;
+}
+.chevron[data-open='true'] {
+  transform: rotate(180deg);
+}

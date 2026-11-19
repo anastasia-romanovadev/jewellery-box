@@ -8,6 +8,8 @@ export default defineConfig({
     target: ['chrome111', 'firefox113', 'safari16.2'],
   },
   test: {
+    include: ['src/**/*.test.{ts,tsx}'],
+    pool: 'threads',
     environment: 'jsdom',
     setupFiles: ['./src/test/setup.ts'],
     css: true,

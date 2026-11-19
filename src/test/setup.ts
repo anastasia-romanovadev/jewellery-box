@@ -1,3 +1,5 @@
+import 'fake-indexeddb/auto'
+import { database } from '../data/database'
 import '@testing-library/jest-dom/vitest'
 import { cleanup } from '@testing-library/react'
 import { afterEach, beforeEach, vi } from 'vitest'
@@ -55,7 +57,9 @@ Object.defineProperty(window, 'matchMedia', {
   })),
 })
 
-beforeEach(() => {
+beforeEach(async () => {
+  await database.delete()
+  await database.open()
   systemDark = false
   mobileViewport = false
   mediaListeners.clear()
@@ -63,7 +67,8 @@ beforeEach(() => {
   window.localStorage.clear()
 })
 
-afterEach(() => {
+afterEach(async () => {
   cleanup()
+  await database.close()
   vi.restoreAllMocks()
 })

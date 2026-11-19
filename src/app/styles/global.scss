@@ -1,12 +1,12 @@
 :root {
   --font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
   --on-accent: #fff;
-  --visual-highlight: var(--visual-highlight);
-  --visual-ring: var(--visual-ring);
-  --visual-gloss: var(--visual-gloss);
-  --swatch-shadow: var(--swatch-shadow);
-  --sidebar-shadow: var(--sidebar-shadow);
-  --overlay: var(--overlay);
+  --visual-highlight: rgb(255 255 255 / 80%);
+  --visual-ring: rgb(255 255 255 / 17%);
+  --visual-gloss: rgb(255 255 255 / 30%);
+  --swatch-shadow: rgb(0 0 0 / 8%);
+  --sidebar-shadow: rgb(18 12 15 / 18%);
+  --overlay: rgb(23 17 18 / 42%);
   --radius-pill: 999px;
   --radius-small: 0.3rem;
   --control-size: 44px;

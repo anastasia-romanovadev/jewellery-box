@@ -1,8 +1,11 @@
-import { useEffect, useState } from 'react'
+import type { CategoryFilterId } from '../entities/jewelry/model/jewelry'
+import { lazy, Suspense, useEffect, useState } from 'react'
 import { Alert, Button, MantineProvider } from '@mantine/core'
 import { useMediaQuery } from '@mantine/hooks'
 import { CollectionPage } from '../pages/collection/ui/CollectionPage'
-import { SettingsPage } from '../pages/settings/ui/SettingsPage'
+const SettingsPage = lazy(() =>
+  import('../pages/settings/ui/SettingsPage').then((module) => ({ default: module.SettingsPage })),
+)
 import { useAppearanceSettings } from '../features/appearance-settings/model/useAppearanceSettings'
 import { useInstallGuide } from '../features/install-guide/model/useInstallGuide'
 import { AppSidebar } from '../widgets/app-sidebar/ui/AppSidebar'
@@ -11,7 +14,7 @@ import { useAppRoute } from './model/useAppRoute'
 
 export function App() {
   const [isSidebarOpen, setSidebarOpen] = useState(false)
-  const [selectedCategory, setSelectedCategory] = useState('Все')
+  const [selectedCategory, setSelectedCategory] = useState<CategoryFilterId>('all')
   const isMobile = useMediaQuery('(max-width: 920px)', undefined, {
     getInitialValueInEffect: false,
   })
@@ -61,7 +64,10 @@ export function App() {
             setSelectedCategory(category)
             handleNavigate('collection')
           }}
-          onNavigate={handleNavigate}
+          onNavigate={(section) => {
+            if (section === 'collection') navigate(section)
+            else handleNavigate(section)
+          }}
           onClose={closeSidebar}
         />
         <main className={classes.main} inert={isModalOpen}>
@@ -84,8 +90,17 @@ export function App() {
           <div className={classes.content}>
             {appearanceSettings.saveFailed && (
               <Alert className={classes.saveError} role="alert" title="Настройки не сохранены">
-                Выбранное оформление действует сейчас, но может сброситься после перезагрузки.
+                {appearanceSettings.storageError}
                 <Button onClick={appearanceSettings.retrySave}>Повторить сохранение</Button>
+                <Button onClick={appearanceSettings.reloadSettings}>
+                  Загрузить сохранённые настройки
+                </Button>
+              </Alert>
+            )}
+            {appearanceSettings.cacheFailed && !appearanceSettings.saveFailed && (
+              <Alert role="status" title="Оформление сохранено в базе">
+                Не удалось обновить быстрый кэш. При запуске тема может применяться с задержкой.
+                <Button onClick={appearanceSettings.retryCache}>Повторить обновление кэша</Button>
               </Alert>
             )}
             {route === 'collection' ? (
@@ -95,7 +110,9 @@ export function App() {
                 onDismissInstallGuide={installGuide.dismiss}
               />
             ) : (
-              <SettingsPage {...appearanceSettings} />
+              <Suspense fallback={<p role="status">Загружаем настройки…</p>}>
+                <SettingsPage {...appearanceSettings} />
+              </Suspense>
             )}
           </div>
         </main>

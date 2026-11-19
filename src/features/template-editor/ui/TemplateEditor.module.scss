@@ -1,0 +1,132 @@
+.editor {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  min-width: 0;
+  padding: var(--space-4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  background: var(--surface);
+  color: var(--fg);
+
+  h2,
+  h3,
+  p {
+    margin: 0;
+    overflow-wrap: anywhere;
+  }
+  h2 {
+    font-size: 1.25rem;
+  }
+  h3 {
+    font-size: var(--font-size-body);
+  }
+  header {
+    display: grid;
+    gap: var(--space-2);
+  }
+  :global(.mantine-Button-root) {
+    white-space: normal;
+    height: auto;
+    padding-block: var(--space-2);
+  }
+  :global(.mantine-Button-label) {
+    white-space: normal;
+    overflow: visible;
+  }
+  :global(.mantine-Checkbox-label) {
+    color: var(--fg);
+    min-height: var(--control-size);
+    display: flex;
+    align-items: center;
+  }
+  :global(.mantine-Checkbox-body) {
+    align-items: center;
+  }
+  :global(.mantine-InputWrapper-error) {
+    color: var(--error);
+  }
+}
+
+.fields {
+  display: grid;
+  gap: var(--space-1);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.field,
+.addForm {
+  display: grid;
+  gap: var(--space-3);
+  min-width: 0;
+  padding: var(--space-4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+}
+.addForm {
+  background: var(--surface-strong);
+}
+.field {
+  padding: var(--space-2) var(--space-3);
+}
+.scope {
+  display: grid;
+  gap: var(--space-2);
+  min-width: 0;
+}
+.options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-4);
+}
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+.hint {
+  color: var(--fg-soft);
+  font-size: var(--font-size-small);
+}
+.error,
+.message {
+  background: var(--error-soft);
+  border: 1px solid var(--error);
+  :global(.mantine-Alert-title),
+  :global(.mantine-Alert-message) {
+    color: var(--fg);
+  }
+}
+
+@media (max-width: 400px) {
+  .addForm {
+    padding: var(--space-3);
+  }
+  .actions > button {
+    flex: 1 1 auto;
+  }
+}
+
+.fieldRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: var(--control-size);
+  overflow-wrap: anywhere;
+}
+.fieldOptions {
+  min-width: 0;
+  summary {
+    cursor: pointer;
+    color: var(--fg-soft);
+    font-size: var(--font-size-small);
+  }
+}
+
+.fieldControls {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
