@@ -1,75 +1,34 @@
-# React + TypeScript + Vite
+# Jewellery Box
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Мобильный-first прототип личной коллекции украшений на React, TypeScript, Vite, Mantine и SCSS Modules. Структура исходников следует FSD: `app`, `pages`, `widgets`, `features`, `entities`, `shared`.
 
-Currently, two official plugins are available:
+## Запуск и проверки
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+Требуется Node.js `^20.19.0` или `>=22.12.0` (Vite 8).
 
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-
+```sh
+npm ci
+npm run dev
+npm run build
+npm run lint
+npm test
+npm run format:check
 ```
 
-You can also install [eslint-plugin-react-x](https://npmx.dev/package/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://npmx.dev/package/eslint-plugin-react-dom) for React-specific lint rules:
+Коллекция открывается на `#/collection`, настройки — на `#/settings`. Hash-маршруты поддерживают прямые ссылки и перезагрузку на статическом хостинге без серверного rewrite.
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+## Прототип и границы текущего этапа
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+- Тема: системная, светлая и тёмная; акценты — бордовый, зелёный и охра.
+- Настройки оформления пока кэшируются в `localStorage`; слой `appearance-cache` изолирует этот кэш. Каноническое хранение в IndexedDB и синхронизацию при переносе данных реализует задача 02.
+- Карточки украшений демонстрационные; база, редактор карточек, реальные фотографии, PWA и импорт/экспорт не входят в задачу 01.
+- Сборка нацелена на Chrome 111+, Firefox 113+ и Safari 16.2+ из-за используемых CSS-возможностей. Реальная проверка на устройствах iPhone/Android остаётся отдельной ручной проверкой.
+- Название «Шкатулка», категории и поведение плашки установки согласованы (Q01–Q06). Раздел шаблона — пояснение о будущем редакторе полей; редактор относится к задаче 02.
+- Ошибка сохранения оформления показывается в интерфейсе с возможностью повторить запись.
+- Визуальная приёмка после исправлений аудита остаётся открытой: 320/390/1440 px, текст 200%, темы и сенсорный ввод.
 
+При ограничении запуска дочерних процессов (`spawn EPERM`) тесты можно запустить без изменения конфигурации:
+
+```sh
+node node_modules/vitest/vitest.mjs run --pool=threads
 ```

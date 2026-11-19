@@ -1,0 +1,147 @@
+:root {
+  --font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+  --on-accent: #fff;
+  --visual-highlight: var(--visual-highlight);
+  --visual-ring: var(--visual-ring);
+  --visual-gloss: var(--visual-gloss);
+  --swatch-shadow: var(--swatch-shadow);
+  --sidebar-shadow: var(--sidebar-shadow);
+  --overlay: var(--overlay);
+  --radius-pill: 999px;
+  --radius-small: 0.3rem;
+  --control-size: 44px;
+  --space-5: 1.25rem;
+  --space-13: 3.25rem;
+  --bg: #f8f5f2;
+  --surface: #fffaf8;
+  --surface-strong: #f2e9e4;
+  --fg: #2b1d22;
+  --fg-soft: #685b60;
+  --border: rgb(80 60 67 / 14%);
+  --accent: #7a304a;
+  --accent-soft: #f7e7ed;
+  --accent-strong: #5f2038;
+  --error: #a62d2d;
+  --error-soft: #f9e8e7;
+  --focus: #6d1836;
+  --font-size-body: 1rem;
+  --font-size-small: 0.875rem;
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --radius-control: 0.9rem;
+  --radius-card: 1.2rem;
+
+  color: var(--fg);
+  background: var(--bg);
+  color-scheme: light;
+  font-family: var(--font-family);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+:root[data-theme='dark'] {
+  --bg: #191516;
+  --surface: #221d1f;
+  --surface-strong: #2b2426;
+  --fg: #f6edf0;
+  --fg-soft: #d1b6bc;
+  --border: rgb(244 208 216 / 16%);
+  --error: #ffb4ab;
+  --error-soft: #3d2424;
+  --accent-soft: rgb(122 48 77 / 24%);
+  --focus: #f2a6bd;
+
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+body {
+  min-width: 320px;
+  min-height: 100vh;
+  min-height: 100dvh;
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font-size: var(--font-size-body);
+  line-height: 1.5;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+button {
+  touch-action: manipulation;
+}
+
+::selection {
+  background: var(--accent-soft);
+}
+
+.mantine-TextInput-input,
+.mantine-Input-input {
+  min-height: var(--control-size);
+  border-color: var(--border);
+  background: var(--surface);
+  color: var(--fg);
+
+  &:focus,
+  &:focus-within {
+    border-color: var(--focus);
+  }
+}
+
+.mantine-InputWrapper-label {
+  color: var(--fg);
+}
+
+.mantine-Button-root:focus-visible,
+.mantine-Modal-close:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.mantine-Button-root {
+  min-height: var(--control-size);
+  --button-bg: var(--accent);
+  --button-hover: var(--accent-strong);
+  --button-color: var(--on-accent);
+
+  &:focus-visible {
+    outline: 2px solid var(--focus);
+    outline-offset: 2px;
+  }
+}
+
+.mantine-Modal-close {
+  width: var(--control-size);
+  height: var(--control-size);
+}
+
+.mantine-Modal-content,
+.mantine-Modal-header {
+  background: var(--surface);
+  color: var(--fg);
+}
+
+.mantine-Modal-title {
+  color: var(--fg);
+}

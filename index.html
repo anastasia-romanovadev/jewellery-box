@@ -1,10 +1,68 @@
 <!doctype html>
-<html lang="en">
+<html lang="ru">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>jewellery-box</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#f8f5f2" />
+    <script>
+      ;(() => {
+        const accents = {
+          burgundy: ['#7a304a', '#f7e7ed', '#5f2038'],
+          forest: ['#4f634d', '#edf3ec', '#394b38'],
+          ochre: ['#85551f', '#f8f0e4', '#694116'],
+        }
+        const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches
+        const defaultColors = accents.burgundy
+
+        document.documentElement.dataset.theme = systemDark ? 'dark' : 'light'
+        document.documentElement.dataset.mantineColorScheme = systemDark ? 'dark' : 'light'
+        document.documentElement.style.colorScheme = systemDark ? 'dark' : 'light'
+        document.documentElement.style.setProperty('--accent', defaultColors[0])
+        document.documentElement.style.setProperty(
+          '--accent-soft',
+          systemDark ? `color-mix(in srgb, ${defaultColors[0]} 30%, #221d1f)` : defaultColors[1],
+        )
+        document.documentElement.style.setProperty('--accent-strong', defaultColors[2])
+        document
+          .querySelector('meta[name="theme-color"]')
+          ?.setAttribute('content', systemDark ? '#191516' : '#f8f5f2')
+
+        try {
+          const readSetting = (key) => {
+            const value = localStorage.getItem(key)
+            if (value === null) return null
+
+            try {
+              const parsed = JSON.parse(value)
+              return typeof parsed === 'string' ? parsed : value
+            } catch {
+              return value
+            }
+          }
+          const theme = readSetting('jewellery-box:theme-mode')
+          const accent = readSetting('jewellery-box:accent-tone')
+          const dark = theme === 'dark' || (theme !== 'light' && systemDark)
+          const colors = accents[accent] || accents.burgundy
+
+          document.documentElement.dataset.theme = dark ? 'dark' : 'light'
+          document.documentElement.dataset.mantineColorScheme = dark ? 'dark' : 'light'
+          document.documentElement.style.colorScheme = dark ? 'dark' : 'light'
+          document
+            .querySelector('meta[name="theme-color"]')
+            ?.setAttribute('content', dark ? '#191516' : '#f8f5f2')
+          document.documentElement.style.setProperty('--accent', colors[0])
+          document.documentElement.style.setProperty(
+            '--accent-soft',
+            dark ? `color-mix(in srgb, ${colors[0]} 30%, #221d1f)` : colors[1],
+          )
+          document.documentElement.style.setProperty('--accent-strong', colors[2])
+        } catch (error) {
+          console.warn('Unable to restore the saved appearance before first render.', error)
+        }
+      })()
+    </script>
+    <title>Шкатулка — личная коллекция украшений</title>
   </head>
   <body>
     <div id="root"></div>

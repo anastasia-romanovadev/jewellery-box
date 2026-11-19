@@ -1,0 +1,26 @@
+.page {
+  width: 100%;
+  max-width: 64rem;
+  margin-inline: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+.intro {
+  h1 {
+    overflow-wrap: anywhere;
+    margin: 0 0 var(--space-2);
+    color: var(--fg);
+    font-size: clamp(2rem, 5vw, 2.7rem);
+    letter-spacing: -0.06em;
+    line-height: 1.1;
+  }
+
+  p {
+    max-width: 58ch;
+    margin: 0;
+    color: var(--fg-soft);
+    line-height: 1.6;
+  }
+}
