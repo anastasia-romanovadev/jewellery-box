@@ -99,7 +99,33 @@ export const DEFAULT_TEMPLATE: CreationTemplate = {
   fields: builtinFields(),
 }
 
+export const FINENESS_LABELS = [
+  '375',
+  '500',
+  '583',
+  '585',
+  '750',
+  '800',
+  '830',
+  '850',
+  '875',
+  '900',
+  '916',
+  '925',
+  '950',
+  '958',
+  '960',
+  '999',
+]
+
 export const DEFAULT_DICTIONARIES: DictionaryEntry[] = [
+  ...FINENESS_LABELS.map((label): DictionaryEntry => ({
+    id: 'fineness-' + label,
+    kind: 'fineness',
+    label,
+    enabled: true,
+    revision: 1,
+  })),
   { id: 'ring', kind: 'type', label: 'Кольца', enabled: true, revision: 1, sizeKind: 'ring' },
   {
     id: 'earrings',

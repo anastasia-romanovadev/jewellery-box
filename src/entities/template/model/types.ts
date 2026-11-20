@@ -1,5 +1,5 @@
 export type SizeKind = 'none' | 'ring' | 'length' | 'earring'
-export type DictionaryKind = 'type' | 'material' | 'stone'
+export type DictionaryKind = 'type' | 'material' | 'stone' | 'fineness'
 
 export type DictionaryEntry = {
   id: string
@@ -31,6 +31,7 @@ export type CreationTemplate = {
 export type DictionaryOption = { id: string; label: string }
 export type SnapshotField = TemplateField & { unit?: string; options?: DictionaryOption[] }
 export type CardSnapshot = {
+  sizeEnabled?: boolean
   templateRevision: number
   typeId: string
   typeLabel: string

@@ -111,6 +111,8 @@ export async function saveDictionaryEntry(
   db: JewelleryDatabase = database,
 ): Promise<DictionaryEntry> {
   const parsed = parseDictionaryEntry(draft)
+  if (parsed.kind === 'type')
+    throw new CatalogValidationError('Типы изделий фиксированы и не редактируются.')
   await initializeDatabase(db)
   return db.transaction('rw', db.dictionaries, async () => {
     const raw = await db.dictionaries.get(parsed.id)
@@ -119,11 +121,6 @@ export async function saveDictionaryEntry(
       throw new ConflictError()
     if (current && current.kind !== parsed.kind)
       throw new CatalogValidationError('Нельзя переносить значение в другой справочник.')
-    if (current?.kind === 'type' && current.sizeKind !== parsed.sizeKind) {
-      throw new CatalogValidationError(
-        'Формат размера существующего типа нельзя менять: создайте отдельный тип изделия.',
-      )
-    }
     if (!current && !parsed.enabled)
       throw new CatalogValidationError('Нельзя создать удалённый вариант.')
     if (parsed.enabled) {

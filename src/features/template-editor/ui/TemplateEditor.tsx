@@ -213,8 +213,8 @@ export function TemplateEditor({ template, entries, onSave }: TemplateEditorProp
                 <Checkbox
                   id={`field-visibility-${field.id}`}
                   aria-label={`Показывать поле «${field.label}»`}
-                  checked={field.enabled !== false}
-                  disabled={saving}
+                  checked={field.id === 'type' || field.enabled !== false}
+                  disabled={saving || field.id === 'type'}
                   color="var(--accent)"
                   onChange={(event) =>
                     updateField(field.id, { enabled: event.currentTarget.checked })

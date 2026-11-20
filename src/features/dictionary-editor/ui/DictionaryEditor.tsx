@@ -2,47 +2,26 @@ import { SettingsSection } from '../../../shared/ui/settings-section/SettingsSec
 import { useLayoutEffect, useRef, useState } from 'react'
 import { Alert, Button, Modal, NativeSelect, TextInput } from '@mantine/core'
 import { useForm } from '@mantine/form'
-import type {
-  DictionaryEntry,
-  DictionaryKind,
-  SizeKind,
-} from '../../../entities/template/model/template'
+import type { DictionaryEntry, DictionaryKind } from '../../../entities/template/model/template'
 import { normalizeDictionaryLabel } from '../../../entities/template/model/template'
 import classes from './DictionaryEditor.module.scss'
 
 type DictionaryEditorProps = {
   entries: DictionaryEntry[]
   onSave: (draft: DictionaryEntry) => Promise<DictionaryEntry>
-  allowTypeSizeEditing?: boolean
-  allowTypeCreation?: boolean
 }
 
 const KINDS: { value: DictionaryKind; label: string }[] = [
-  { value: 'type', label: 'Типы изделий' },
+  { value: 'fineness', label: 'Пробы' },
   { value: 'material', label: 'Материалы' },
   { value: 'stone', label: 'Камни' },
-]
-const SIZE_KINDS: { value: SizeKind; label: string }[] = [
-  { value: 'none', label: 'Без размера' },
-  { value: 'ring', label: 'Число, как у кольца' },
-  { value: 'length', label: 'Длина в сантиметрах' },
-  { value: 'earring', label: 'Маленькие / средние / большие' },
 ]
 
 function isKind(value: string): value is DictionaryKind {
   return KINDS.some((kind) => kind.value === value)
 }
 
-function isSizeKind(value: string): value is SizeKind {
-  return SIZE_KINDS.some((kind) => kind.value === value)
-}
-
-export function DictionaryEditor({
-  entries,
-  onSave,
-  allowTypeSizeEditing = false,
-  allowTypeCreation = false,
-}: DictionaryEditorProps) {
+export function DictionaryEditor({ entries, onSave }: DictionaryEditorProps) {
   const [kind, setKind] = useState<DictionaryKind>('material')
   const kindControl = useRef<HTMLSelectElement>(null)
   const creationInput = useRef<HTMLInputElement>(null)
@@ -55,14 +34,14 @@ export function DictionaryEditor({
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [editError, setEditError] = useState<string | null>(null)
-  const editForm = useForm<{ label: string; sizeKind: SizeKind }>({
-    initialValues: { label: '', sizeKind: 'none' },
+  const editForm = useForm<{ label: string }>({
+    initialValues: { label: '' },
     validate: { label: (value) => (value.trim() ? null : 'Введите название') },
   })
   const [removalError, setRemovalError] = useState<string | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
-  const form = useForm<{ label: string; sizeKind: SizeKind }>({
-    initialValues: { label: '', sizeKind: 'none' },
+  const form = useForm<{ label: string }>({
+    initialValues: { label: '' },
     validate: { label: (value) => (value.trim() ? null : 'Введите название') },
   })
   const combined = new Map<string, DictionaryEntry>()
@@ -105,7 +84,7 @@ export function DictionaryEditor({
 
   function startEditing(entry: DictionaryEntry) {
     setEditing(entry)
-    const values = { label: entry.label, sizeKind: entry.sizeKind ?? 'none' }
+    const values = { label: entry.label }
     editForm.setValues(values)
     editForm.resetDirty(values)
     editForm.clearErrors()
@@ -113,13 +92,9 @@ export function DictionaryEditor({
     setNotice(null)
   }
 
-  async function save(
-    values: { label: string; sizeKind: SizeKind },
-    target: DictionaryEntry | null = null,
-  ) {
+  async function save(values: { label: string }, target: DictionaryEntry | null = null) {
     const activeForm = target ? editForm : form
     const reportError = target ? setEditError : setError
-    if (kind === 'type' && !target && !allowTypeCreation) return
     const label = values.label.trim()
     const duplicate = currentEntries.some(
       (entry) =>
@@ -138,7 +113,6 @@ export function DictionaryEditor({
       label,
       enabled: true,
       revision: target?.revision ?? 0,
-      ...(kind === 'type' ? { sizeKind: values.sizeKind } : {}),
     }
     setSaving(true)
     reportError(null)
@@ -284,32 +258,16 @@ export function DictionaryEditor({
             {error}
           </Alert>
         )}
-        {kind === 'type' && !allowTypeCreation && (
-          <p>
-            Добавление новых типов пока недоступно. Существующие типы можно переименовать или
-            удалить.
-          </p>
-        )}
+
         <TextInput
           ref={creationInput}
           label="Название варианта"
-          disabled={saving || (kind === 'type' && !allowTypeCreation)}
+          disabled={saving}
           {...form.getInputProps('label')}
         />
-        {kind === 'type' && allowTypeSizeEditing && (
-          <NativeSelect
-            label="Формат размера"
-            data={SIZE_KINDS}
-            value={form.values.sizeKind}
-            disabled={saving}
-            onChange={(event) => {
-              if (isSizeKind(event.currentTarget.value))
-                form.setFieldValue('sizeKind', event.currentTarget.value)
-            }}
-          />
-        )}
+
         <div className={classes.actions}>
-          <Button type="submit" loading={saving} disabled={kind === 'type' && !allowTypeCreation}>
+          <Button type="submit" loading={saving}>
             Добавить вариант
           </Button>
           <Button

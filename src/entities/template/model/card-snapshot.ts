@@ -20,6 +20,7 @@ const optionsSchema = z
 
 const snapshotSchema = z
   .object({
+    sizeEnabled: z.boolean().optional(),
     templateRevision: z.number().int().nonnegative(),
     typeId: identifier.refine((id) => id !== 'all'),
     typeLabel: label,
@@ -109,6 +110,7 @@ export function buildCardSnapshot(
         ...field,
         scope: field.scope === 'all' ? 'all' : [...field.scope],
       }
+      if (field.id === 'fineness') result.options = options('fineness')
       if (field.id === 'weight') result.unit = 'г'
       if (field.id === 'size' && type.sizeKind === 'length') result.unit = 'см'
       if (field.id === 'size' && type.sizeKind === 'earring')
@@ -122,6 +124,7 @@ export function buildCardSnapshot(
       return result
     })
   return {
+    sizeEnabled: validated.fields.some((field) => field.id === 'size' && field.enabled),
     templateRevision: validated.revision,
     typeId,
     typeLabel: type.label,

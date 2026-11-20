@@ -1,21 +1,18 @@
-import { DEMO_JEWELRY, type CategoryFilterId } from '../../../entities/jewelry/model/jewelry'
+import type { JewelryItem } from '../../../entities/jewelry/model/item'
 import { JewelryCard } from '../../../entities/jewelry/ui/JewelryCard'
 import classes from './CollectionGallery.module.scss'
-
-export function CollectionGallery({ selectedCategory }: { selectedCategory: CategoryFilterId }) {
-  const visibleJewelry =
-    selectedCategory === 'all'
-      ? DEMO_JEWELRY
-      : DEMO_JEWELRY.filter((jewelry) => jewelry.typeId === selectedCategory)
-
+export function CollectionGallery({
+  items,
+  onOpen,
+}: {
+  items: JewelryItem[]
+  onOpen: (item: JewelryItem) => void
+}) {
   return (
-    <div className={classes.gallery}>
-      {visibleJewelry.length === 0 && <p role="status">В этой категории пока нет украшений.</p>}
-      <div className={classes.cards}>
-        {visibleJewelry.map((jewelry) => (
-          <JewelryCard key={jewelry.id} jewelry={jewelry} />
-        ))}
-      </div>
+    <div className={classes.cards}>
+      {items.map((item) => (
+        <JewelryCard key={item.id} jewelry={item} onOpen={() => onOpen(item)} />
+      ))}
     </div>
   )
 }

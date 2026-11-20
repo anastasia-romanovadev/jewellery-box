@@ -38,7 +38,9 @@ for (const width of [390, 1440])
       await expect(categories).toBeHidden()
       await collection.click()
       await page.getByRole('button', { name: 'Серьги', exact: true }).click()
-      await expect(page.getByText('Серьги «Лепесток»', { exact: true })).toBeVisible()
+      await expect(
+        page.getByText('В шкатулке пока нет украшений. Добавьте первое.', { exact: true }),
+      ).toBeVisible()
       await expect(page.getByText('Кольцо «Роза»', { exact: true })).toHaveCount(0)
       if (mobile) {
         await expect(menu).toHaveAttribute('aria-expanded', 'false')

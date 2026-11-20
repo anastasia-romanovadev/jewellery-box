@@ -14,7 +14,7 @@ describe('saved snapshot boundary', () => {
   it('preserves historical labels without consulting current dictionaries or requiring hidden fields', () => {
     const template = structuredClone(DEFAULT_TEMPLATE)
     template.fields.forEach((field) => {
-      field.enabled = false
+      field.enabled = field.id === 'type'
     })
     const snapshot = buildCardSnapshot(template, DEFAULT_DICTIONARIES, 'ring')
     snapshot.typeLabel = 'Историческое название'

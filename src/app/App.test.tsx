@@ -58,7 +58,7 @@ describe('foundation app', () => {
     }
   })
 
-  it('filters the demo collection by category', () => {
+  it('selects a category without seeding demo jewelry', async () => {
     renderApp()
 
     expect(screen.queryByRole('button', { name: 'Серьги' })).not.toBeInTheDocument()
@@ -69,7 +69,10 @@ describe('foundation app', () => {
     )
     fireEvent.click(screen.getByRole('button', { name: 'Серьги' }))
 
-    expect(screen.getByText('Серьги «Лепесток»')).toBeInTheDocument()
+    expect(
+      await screen.findByText('В шкатулке пока нет украшений. Добавьте первое.'),
+    ).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Серьги' })).toHaveAttribute('aria-pressed', 'true')
     expect(screen.queryByText('Кольцо «Роза»')).not.toBeInTheDocument()
   })
 
@@ -234,7 +237,7 @@ describe('foundation regressions', () => {
       ),
     )
     fireEvent.click(screen.getByRole('button', { name: 'Серьги' }))
-    await screen.findByText('Серьги «Лепесток»')
+    await screen.findByText('В шкатулке пока нет украшений. Добавьте первое.')
     expect(screen.queryByText('Кольцо «Роза»')).not.toBeInTheDocument()
     expect(menu).toHaveAttribute('aria-expanded', 'false')
     await waitFor(() => expect(menu).toHaveFocus())

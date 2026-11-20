@@ -66,6 +66,14 @@ export function validateCardValues(
     errors.weightGrams = 'Введите вес больше нуля в граммах'
   if (required('photos') && input.photoIds.length === 0)
     errors.photoIds = 'Добавьте хотя бы одну фотографию'
+  if (input.photoIds.length > 5) errors.photoIds = 'Можно добавить не больше 5 фотографий'
+  const finenessOptions = snapshot.fields.find((field) => field.id === 'fineness')?.options
+  if (
+    input.fineness &&
+    finenessOptions &&
+    !finenessOptions.some((option) => option.id === input.fineness)
+  )
+    errors.fineness = 'Выберите пробу из справочника'
   if (new Set(input.photoIds).size !== input.photoIds.length)
     errors.photoIds = 'Фотографии не должны повторяться'
   if (required('materials') && input.materialIds.length === 0)

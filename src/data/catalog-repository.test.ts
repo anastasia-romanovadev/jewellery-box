@@ -58,6 +58,28 @@ afterEach(async () => {
 })
 
 describe('catalog persistence', () => {
+  it('rejects editing fixed types and hiding the mandatory type field', async () => {
+    const { template, entries } = await getCatalog(db)
+    const type = entries.find((entry) => entry.kind === 'type')!
+    await expect(saveDictionaryEntry({ ...type, enabled: false }, db)).rejects.toThrow(
+      'фиксированы',
+    )
+    await expect(saveDictionaryEntry({ ...type, id: 'new-type', revision: 0 }, db)).rejects.toThrow(
+      'фиксированы',
+    )
+    await expect(
+      saveTemplate(
+        {
+          ...template,
+          fields: template.fields.map((field) =>
+            field.id === 'type' ? { ...field, enabled: false } : field,
+          ),
+        },
+        db,
+      ),
+    ).rejects.toThrow()
+    expect((await getCatalog(db)).template).toEqual(template)
+  })
   it('migrates v1 fields without data loss and restores removed optional fields as hidden', async () => {
     const original = await getCatalog(db)
     const appearance = await getAppearance(db)
@@ -231,7 +253,8 @@ describe('dictionary preservation', () => {
       },
       db,
     )
-    await saveDictionaryEntry({ ...type, enabled: false }, db)
+    // Simulate a legacy disabled type; the current editor cannot disable fixed types.
+    await db.dictionaries.put({ ...type, enabled: false })
 
     const renamed = await saveTemplate(
       {

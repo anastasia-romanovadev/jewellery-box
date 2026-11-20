@@ -42,7 +42,7 @@ function validValues(typeId = 'ring'): CardValues {
     typeId,
     materialIds: ['gold-white', 'gold-red'],
     stoneIds: ['diamond', 'ruby'],
-    fineness: '585',
+    fineness: 'fineness-585',
     weightGrams: '3,25',
     photoIds: ['photo-1'],
     customValues: {},
@@ -50,7 +50,7 @@ function validValues(typeId = 'ring'): CardValues {
 }
 
 describe('template boundary validation', () => {
-  it('defaults legacy fields to visible and allows hiding every protected field', () => {
+  it('defaults legacy fields to visible and only permits hiding fields other than type', () => {
     const legacy = {
       ...template(),
       fields: template().fields.map((field) => {
@@ -61,22 +61,22 @@ describe('template boundary validation', () => {
     }
     expect(parseTemplate(legacy).fields.every((field) => field.enabled)).toBe(true)
     const hidden = template()
-    hidden.fields = hidden.fields.map((field) => ({ ...field, enabled: false }))
+    hidden.fields = hidden.fields.map((field) => ({ ...field, enabled: field.id === 'type' }))
     expect(parseTemplate(hidden)).toEqual(hidden)
     const snapshot = buildCardSnapshot(hidden, dictionaries(), 'ring')
-    expect(snapshot.fields).toEqual([])
-    expect(validateCardValues(snapshot, { customValues: {} })).toEqual({})
+    expect(snapshot.fields.map((field) => field.id)).toEqual(['type'])
+    expect(validateCardValues(snapshot, { typeId: 'ring', customValues: {} })).toEqual({})
   })
 
   it('visibility affects only new snapshots and restores mandatory validation when enabled', () => {
     const draft = template()
     draft.fields.push(customField())
     const previous = buildCardSnapshot(draft, dictionaries(), 'ring')
-    draft.fields = draft.fields.map((field) => ({ ...field, enabled: false }))
+    draft.fields = draft.fields.map((field) => ({ ...field, enabled: field.id === 'type' }))
     const hidden = buildCardSnapshot(draft, dictionaries(), 'ring')
     expect(previous.fields.some((field) => field.id === 'clasp')).toBe(true)
     expect(validateCardValues(previous, { customValues: {} })).toHaveProperty('fineness')
-    expect(validateCardValues(hidden, { customValues: {} })).toEqual({})
+    expect(validateCardValues(hidden, { typeId: 'ring', customValues: {} })).toEqual({})
     expect(validateCardValues(hidden, { customValues: { clasp: 'hidden value' } })).toHaveProperty(
       'customValues.clasp',
     )

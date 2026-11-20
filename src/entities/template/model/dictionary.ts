@@ -5,7 +5,7 @@ import type { DictionaryEntry } from './types'
 const dictionaryEntrySchema = z
   .object({
     id: identifier,
-    kind: z.enum(['type', 'material', 'stone']),
+    kind: z.enum(['type', 'material', 'stone', 'fineness']),
     label,
     enabled: z.boolean(),
     revision: z.number().int().nonnegative(),

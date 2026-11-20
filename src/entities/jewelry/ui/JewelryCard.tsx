@@ -1,22 +1,29 @@
-import type { DemoJewelry } from '../model/jewelry'
+import type { JewelryItem } from '../model/item'
+import { StoredPhoto } from './StoredPhoto'
 import classes from './JewelryCard.module.scss'
 
-type JewelryCardProps = {
-  jewelry: DemoJewelry
-}
-
-export function JewelryCard({ jewelry }: JewelryCardProps) {
+export function JewelryCard({ jewelry, onOpen }: { jewelry: JewelryItem; onOpen: () => void }) {
+  const materials = jewelry.materialIds
+    .map((id) => jewelry.snapshot.materials.find((option) => option.id === id)?.label)
+    .filter(Boolean)
+    .join(', ')
   return (
-    <article className={classes.card}>
-      <div className={classes.visual} aria-hidden="true" />
-      <div className={classes.heading}>
-        <h2 className={classes.title}>{jewelry.name}</h2>
-        <span className={classes.category}>{jewelry.categoryLabel}</span>
-      </div>
-      <p className={classes.material}>{jewelry.materialLabels.join(', ')}</p>
-      <div className={classes.footer}>
-        <span className={classes.label}>В коллекции</span>
-      </div>
-    </article>
+    <button
+      type="button"
+      className={classes.card}
+      onClick={onOpen}
+      aria-label={'Открыть: ' + jewelry.snapshot.typeLabel + (materials ? ', ' + materials : '')}
+    >
+      {jewelry.photoIds[0] ? (
+        <StoredPhoto id={jewelry.photoIds[0]} alt={jewelry.snapshot.typeLabel} />
+      ) : (
+        <div className={classes.placeholder}>Без фотографии</div>
+      )}
+      <span className={classes.title}>{jewelry.snapshot.typeLabel}</span>
+      {materials && <span>{materials}</span>}
+      {jewelry.weightGrams !== undefined && (
+        <span>{jewelry.weightGrams.toLocaleString('ru')} г</span>
+      )}
+    </button>
   )
 }

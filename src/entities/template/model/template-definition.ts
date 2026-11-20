@@ -39,6 +39,7 @@ const templateSchema = z
         issue('Типы изделия в области поля не должны повторяться')
       if (field.scope !== 'all' && field.scope.includes('all'))
         issue('«Все» не является ID типа изделия')
+      if (field.id === 'type' && !field.enabled) issue('Тип изделия всегда видимый и обязательный')
       const builtin = definitions.find((definition) => definition.id === field.id)
       if (field.source === 'builtin') {
         if (
