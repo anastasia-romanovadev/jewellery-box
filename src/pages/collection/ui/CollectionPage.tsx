@@ -22,12 +22,14 @@ import { CollectionTagline } from './CollectionTagline'
 type CollectionPageProps = {
   collection: ReturnType<typeof useItems>
   selectedCategory: CategoryFilterId
+  onResetCategory: () => void
   isInstallGuideVisible: boolean
   onDismissInstallGuide: () => void
 }
 export function CollectionPage({
   collection,
   selectedCategory,
+  onResetCategory,
   isInstallGuideVisible,
   onDismissInstallGuide,
 }: CollectionPageProps) {
@@ -90,6 +92,8 @@ export function CollectionPage({
       )}
       {catalog && (
         <CollectionFilters
+          category={selectedCategory}
+          onResetCategory={onResetCategory}
           value={filters}
           entries={catalog.entries}
           items={items}

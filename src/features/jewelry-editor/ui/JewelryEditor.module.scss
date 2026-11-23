@@ -16,6 +16,12 @@
   overflow-wrap: anywhere;
   gap: var(--space-4);
   color: var(--fg);
+  // iPhone Safari zooms small focused inputs, including MultiSelect's inner input.
+  input,
+  select,
+  textarea {
+    font-size: max(16px, var(--font-size-body));
+  }
   :global(.mantine-Button-label) {
     white-space: normal;
   }

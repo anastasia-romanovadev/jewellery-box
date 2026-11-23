@@ -129,6 +129,7 @@ export function App() {
               <CollectionPage
                 collection={collection}
                 selectedCategory={selectedCategory}
+                onResetCategory={() => setSelectedCategory('all')}
                 isInstallGuideVisible={installGuide.isVisible}
                 onDismissInstallGuide={installGuide.dismiss}
               />

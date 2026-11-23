@@ -9,17 +9,22 @@ import type { DictionaryEntry } from '../../../entities/template/model/template'
 import classes from './CollectionFilters.module.scss'
 import { StoneLabel } from '../../../entities/template/ui/StoneLabel'
 import { FilterTags } from './FilterTags'
+import { JEWELRY_CATEGORIES } from '../../../entities/jewelry/model/jewelry'
 
 export function CollectionFilters({
   value,
   entries,
   items,
   onChange,
+  category,
+  onResetCategory,
 }: {
   value: Filters
   entries: DictionaryEntry[]
   items: JewelryItem[]
   onChange: (filters: Filters) => void
+  category: string
+  onResetCategory: () => void
 }) {
   const [opened, setOpened] = useState(false)
   const [draft, setDraft] = useState<Filters>(value)
@@ -69,6 +74,7 @@ export function CollectionFilters({
     return [min && 'от ' + min, max && 'до ' + max].filter(Boolean).join(' ')
   }
   const summary = [
+    category !== 'all' && JEWELRY_CATEGORIES.find((entry) => entry.id === category)?.label,
     ...value.materials.map((id) => materials.find((entry) => entry.value === id)?.label ?? id),
     ...value.stones.map((id) => stones.find((entry) => entry.value === id)?.label ?? id),
     value.sizeKind &&
@@ -104,7 +110,10 @@ export function CollectionFilters({
             color="gray"
             size="lg"
             aria-label="Сбросить фильтры"
-            onClick={() => onChange(structuredClone(EMPTY_FILTERS))}
+            onClick={() => {
+              onChange(structuredClone(EMPTY_FILTERS))
+              onResetCategory()
+            }}
           >
             ×
           </ActionIcon>

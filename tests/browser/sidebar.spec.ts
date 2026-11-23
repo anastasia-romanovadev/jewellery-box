@@ -44,10 +44,26 @@ for (const width of [390, 1440])
         }),
       ).toBeVisible()
       await expect(page.getByText('Кольцо «Роза»', { exact: true })).toHaveCount(0)
+      const applied = page.getByLabel('Применённые фильтры')
+      await expect(applied).toContainText('Серьги')
+      await page.getByRole('button', { name: 'Фильтры', exact: true }).click()
+      await page
+        .getByRole('dialog', { name: 'Фильтры', exact: true })
+        .getByRole('button', { name: 'Серебро', exact: true })
+        .click()
+      await page.getByRole('button', { name: 'Применить фильтры', exact: true }).click()
+      await expect(applied).toContainText('Серьги')
+      await expect(applied).toContainText('Серебро')
+      await page.getByRole('button', { name: 'Сбросить фильтры', exact: true }).click()
+      await expect(applied).toHaveCount(0)
       if (mobile) {
         await expect(menu).toHaveAttribute('aria-expanded', 'false')
         await menu.tap()
       }
+      await expect(page.getByRole('button', { name: 'Все', exact: true })).toHaveAttribute(
+        'aria-pressed',
+        'true',
+      )
       await page.getByRole('button', { name: 'Настройки', exact: true }).click()
       if (mobile) await menu.tap()
       await expect(categories).toBeHidden()

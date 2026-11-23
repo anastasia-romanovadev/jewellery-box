@@ -11,7 +11,8 @@ function PhotoSaveOptions({
   photoIds,
   currentId,
   onBusyChange,
-}: Props & { onBusyChange: (busy: boolean) => void }) {
+  onSaved,
+}: Props & { onBusyChange: (busy: boolean) => void; onSaved: () => void }) {
   const [files, setFiles] = useState<File[] | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
@@ -56,6 +57,7 @@ function PhotoSaveOptions({
         const blob = all ? await photoArchive(selected) : current
         if (active.current) downloadPhotoFile(blob, all ? 'jewellery-photos.zip' : current.name)
       }
+      if (active.current) onSaved()
     } catch (reason) {
       if (active.current && !(reason instanceof DOMException && reason.name === 'AbortError'))
         setError('Не удалось сохранить фотографии. Попробуй ещё раз или скачай их по одной.')
@@ -156,6 +158,7 @@ export function PhotoSaveMenu({
           key={JSON.stringify([props.itemId, props.photoIds])}
           {...props}
           onBusyChange={setBusy}
+          onSaved={onClose}
         />
       )}
     </Modal>

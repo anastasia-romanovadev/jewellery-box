@@ -1,4 +1,4 @@
-import { Fragment, type ReactNode } from 'react'
+import { Fragment, useState, type ReactNode } from 'react'
 import { MultiSelect, NativeSelect, Textarea, TextInput } from '@mantine/core'
 import type { UseFormReturnType } from '@mantine/form'
 import type {
@@ -32,6 +32,7 @@ export function JewelryFields({
   onChanged: () => void
   renderPhotos: (label: string) => ReactNode
 }) {
+  const [materialsOpened, setMaterialsOpened] = useState(false)
   function options(
     kind: DictionaryEntry['kind'],
     historical: DictionaryOption[],
@@ -114,6 +115,16 @@ export function JewelryFields({
             return (
               <MultiSelect
                 key={field.id}
+                dropdownOpened={field.id === 'materials' ? materialsOpened : undefined}
+                onDropdownOpen={
+                  field.id === 'materials' ? () => setMaterialsOpened(true) : undefined
+                }
+                onDropdownClose={
+                  field.id === 'materials' ? () => setMaterialsOpened(false) : undefined
+                }
+                onOptionSubmit={
+                  field.id === 'materials' ? () => setMaterialsOpened(false) : undefined
+                }
                 label={field.label}
                 required={field.required}
                 disabled={disabled}

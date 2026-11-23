@@ -2,6 +2,8 @@ import { expect, test, type Page } from '@playwright/test'
 import { readFile } from 'node:fs/promises'
 import { unzipSync } from 'fflate'
 
+test.use({ hasTouch: true })
+
 const first = Buffer.from(
   'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jB1sAAAAASUVORK5CYII=',
   'base64',
@@ -55,17 +57,20 @@ for (const theme of ['light', 'dark'] as const) {
     const one = await oneDownload
     expect(one.suggestedFilename()).toBe('02-same.png')
     expect(await readFile((await one.path())!)).toEqual(second)
+    await expect(saveDialog).toBeHidden()
+    await expect(details.getByRole('button', { name: 'Сохранить фото', exact: true })).toBeFocused()
+    await details.getByRole('button', { name: 'Сохранить фото', exact: true }).tap()
+    await expect(saveDialog).toHaveCSS('opacity', '1')
+    await saveDialog.screenshot({ path: 'test-results/save-modal-' + theme + '.png' })
     const allDownload = page.waitForEvent('download')
-    await saveDialog.getByRole('button', { name: 'Сохранить все фото (2)', exact: true }).click()
+    await saveDialog.getByRole('button', { name: 'Сохранить все фото (2)', exact: true }).tap()
     const all = await allDownload
     expect(all.suggestedFilename()).toBe('jewellery-photos.zip')
     const contents = unzipSync(new Uint8Array(await readFile((await all.path())!)))
     expect(Object.keys(contents)).toEqual(['01-same.png', '02-same.png'])
     expect(Buffer.from(contents['01-same.png'])).toEqual(first)
     expect(Buffer.from(contents['02-same.png'])).toEqual(second)
-    await expect(saveDialog).toHaveCSS('opacity', '1')
-    await saveDialog.screenshot({ path: 'test-results/save-modal-' + theme + '.png' })
-    await page.keyboard.press('Escape')
+    await expect(saveDialog).toBeHidden()
     await expect(details.getByRole('button', { name: 'Сохранить фото', exact: true })).toBeFocused()
     await details.getByRole('button', { name: 'Открыть фотографию крупно' }).click()
     const viewer = page.getByRole('dialog', { name: 'Просмотр фотографии' })
@@ -77,7 +82,7 @@ for (const theme of ['light', 'dark'] as const) {
     const viewerDownload = page.waitForEvent('download')
     await saveDialog.getByRole('button', { name: 'Сохранить это фото', exact: true }).click()
     expect((await viewerDownload).suggestedFilename()).toBe('01-same.png')
-    await saveDialog.getByRole('button', { name: 'Закрыть сохранение фото' }).click()
+    await expect(saveDialog).toBeHidden()
     await expect(viewer.getByRole('button', { name: 'Сохранить фото', exact: true })).toBeFocused()
     await page.getByRole('button', { name: 'Закрыть просмотр фото', exact: true }).click()
     await expect(details).toBeVisible()
@@ -114,7 +119,12 @@ test('native file sharing keeps activation; cancellation does not download and e
   await details.getByRole('button', { name: 'Фото 2', exact: true }).click()
   await details.getByRole('button', { name: 'Сохранить фото', exact: true }).click()
   await saveDialog.getByRole('button', { name: 'Сохранить это фото', exact: true }).click()
+  await expect(saveDialog).toBeHidden()
+  await expect(details.getByRole('button', { name: 'Сохранить фото', exact: true })).toBeFocused()
+  await details.getByRole('button', { name: 'Сохранить фото', exact: true }).tap()
   await saveDialog.getByRole('button', { name: 'Сохранить все фото (2)', exact: true }).click()
+  await expect(saveDialog).toBeHidden()
+  await details.getByRole('button', { name: 'Сохранить фото', exact: true }).tap()
   const shared = await page.evaluate(
     () => (window as unknown as { photoShareTest: { shared: unknown } }).photoShareTest.shared,
   )
@@ -142,4 +152,6 @@ test('native file sharing keeps activation; cancellation does not download and e
   const download = page.waitForEvent('download')
   await saveDialog.getByRole('button', { name: 'Скачать текущее файлом', exact: true }).click()
   expect((await download).suggestedFilename()).toBe('02-same.png')
+  await expect(saveDialog).toBeHidden()
+  await expect(details.getByRole('button', { name: 'Сохранить фото', exact: true })).toBeFocused()
 })

@@ -24,6 +24,7 @@ for (const theme of ['light', 'dark'] as const) {
         await materials.locator('.mantine-MultiSelect-input').tap({ position: { x: 5, y: 5 } })
         expect(fileChoosers).toBe(0)
         await page.getByRole('option', { name, exact: true }).tap()
+        await expect(page.getByRole('listbox')).toBeHidden()
         expect(fileChoosers).toBe(0)
         await expect(
           materials.locator('.mantine-Pill-label').filter({ hasText: name }),
@@ -34,6 +35,20 @@ for (const theme of ['light', 'dark'] as const) {
       await materials.locator('label').tap()
       expect(fileChoosers).toBe(0)
       await page.getByRole('textbox', { name: 'Вес, г', exact: true }).focus()
+      const fields = page
+        .getByRole('dialog')
+        .locator('input:not([type="hidden"]):not([type="file"]), select, textarea')
+      for (const field of await fields.all()) {
+        expect(
+          await field.evaluate((element) => parseFloat(getComputedStyle(element).fontSize)),
+        ).toBeGreaterThanOrEqual(16)
+      }
+      // Buttons remain reachable without filling weight/assays or submitting the form.
+      const save = page.getByRole('button', { name: 'Сохранить украшение', exact: true })
+      await save.scrollIntoViewIfNeeded()
+      await expect(save).toBeInViewport()
+      await expect(page.getByRole('textbox', { name: 'Вес, г', exact: true })).toHaveValue('')
+      expect(await page.evaluate(() => window.visualViewport?.scale ?? 1)).toBe(1)
       await expect(page.getByRole('heading', { name: 'Фотографии (0/5)' })).toBeVisible()
       const picker = page.waitForEvent('filechooser')
       await page.getByRole('button', { name: 'Из галереи', exact: true }).tap()
