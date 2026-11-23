@@ -8,6 +8,98 @@ const png = Buffer.from(
 )
 const photo = (name = 'original.png') => ({ name, mimeType: 'image/png', buffer: png })
 
+for (const theme of ['light', 'dark'] as const) {
+  test(`independent material assays survive saving and reopening, ${theme}`, async ({ page }) => {
+    await page.emulateMedia({ colorScheme: theme })
+    await page.setViewportSize({ width: 390, height: 844 })
+    await openForm(page)
+    const assay = (material: string) =>
+      page.getByRole('combobox', { name: `Проба — ${material}`, exact: true })
+    await expect(page.getByRole('combobox', { name: /^Проба/ })).toHaveCount(0)
+    async function addMaterial(label: string) {
+      await page.getByRole('textbox', { name: 'Материалы', exact: true }).focus()
+      await page.keyboard.press('ArrowDown')
+      await page.getByRole('option', { name: label, exact: true }).click()
+      await page.getByRole('textbox', { name: 'Вес, г', exact: true }).focus()
+    }
+    async function removeMaterial(label: string) {
+      await page.locator('.mantine-Pill-root').filter({ hasText: label }).locator('button').click()
+    }
+    for (const label of ['Белое золото', 'Красное золото', 'Жёлтое золото']) {
+      await addMaterial(label)
+      await expect(assay(label).locator('option')).toHaveText([
+        'Выбери пробу',
+        '375',
+        '500',
+        '585',
+        '750',
+        '958',
+        '999',
+      ])
+      await assay(label).selectOption('fineness-gold-585')
+      await removeMaterial(label)
+      await expect(assay(label)).toHaveCount(0)
+    }
+    await fillForm(page)
+    await addMaterial('Красное золото')
+    await assay('Красное золото').selectOption('fineness-gold-750')
+    await addMaterial('Серебро')
+    await expect(assay('Серебро').locator('option')).toHaveText([
+      'Выбери пробу',
+      '800',
+      '830',
+      '875',
+      '925',
+      '960',
+      '999',
+    ])
+    await page.getByRole('button', { name: 'Сохранить украшение', exact: true }).click()
+    await expect(page.getByRole('dialog', { name: 'Добавить украшение' })).toBeVisible()
+    expect(
+      await assay('Серебро').evaluate(
+        (element: HTMLSelectElement) => element.validity.valueMissing,
+      ),
+    ).toBe(true)
+    await assay('Серебро').selectOption('fineness-silver-925')
+    await addMaterial('Платина')
+    await expect(assay('Платина').locator('option')).toHaveText([
+      'Выбери пробу',
+      '585',
+      '850',
+      '900',
+      '950',
+      '999',
+    ])
+    await assay('Платина').selectOption('fineness-platinum-950')
+    await removeMaterial('Серебро')
+    await expect(assay('Белое золото')).toHaveValue('fineness-gold-585')
+    await expect(assay('Красное золото')).toHaveValue('fineness-gold-750')
+    await expect(assay('Платина')).toHaveValue('fineness-platinum-950')
+    await addMaterial('Серебро')
+    await expect(assay('Серебро')).toHaveValue('')
+    await assay('Серебро').selectOption('fineness-silver-925')
+    await assay('Красное золото').scrollIntoViewIfNeeded()
+    await page.screenshot({ path: `test-results/fineness-${theme}.png` })
+    await page.getByRole('button', { name: 'Сохранить украшение', exact: true }).click()
+    await expect(page.getByRole('dialog')).toBeHidden()
+    await page.reload()
+    await page.getByRole('button', { name: /^Открыть: Кольца/ }).click()
+    const details = page.getByRole('dialog')
+    for (const text of [
+      'Белое золото: 585',
+      'Красное золото: 750',
+      'Серебро: 925',
+      'Платина: 950',
+    ]) {
+      await expect(details).toContainText(text)
+    }
+    await page.getByRole('button', { name: 'Редактировать', exact: true }).click()
+    await expect(assay('Белое золото')).toHaveValue('fineness-gold-585')
+    await expect(assay('Красное золото')).toHaveValue('fineness-gold-750')
+    await expect(assay('Серебро')).toHaveValue('fineness-silver-925')
+    await expect(assay('Платина')).toHaveValue('fineness-platinum-950')
+  })
+}
 test('100 items read metadata without loading all original photos', async ({ page }, info) => {
   await page.setViewportSize({ width: 390, height: 844 })
   await openForm(page)
@@ -112,7 +204,9 @@ async function fillForm(page: Page) {
   await page.getByRole('textbox', { name: 'Материалы' }).focus()
   await page.keyboard.press('ArrowDown')
   await page.getByRole('option', { name: 'Белое золото', exact: true }).click()
-  await page.getByRole('combobox', { name: 'Проба', exact: true }).selectOption('fineness-585')
+  await page
+    .getByRole('combobox', { name: 'Проба — Белое золото', exact: true })
+    .selectOption('fineness-gold-585')
   await page.getByRole('textbox', { name: 'Вес, г', exact: true }).fill('3,25')
   await page.getByLabel('Размер', { exact: true }).fill('16,5')
   await page.getByLabel('Добавить фотографии из галереи').setInputFiles(photo())
@@ -145,11 +239,12 @@ test('creates, reloads, changes size format, filters and deletes without orphan 
   await page.getByRole('button', { name: 'Сохранить украшение', exact: true }).click()
   await expect(page.getByRole('button', { name: 'Открыть: Серьги, Белое золото' })).toBeVisible()
   await page.getByRole('button', { name: 'Фильтры', exact: true }).click()
-  await page.getByLabel('Формат размера').selectOption('ring')
+  await page
+    .getByRole('group', { name: 'Формат размера', exact: true })
+    .getByRole('button', { name: 'Размер кольца', exact: true })
+    .click()
   await page.getByRole('button', { name: 'Применить фильтры' }).click()
-  await expect(
-    page.getByText('По выбранным условиям украшений нет. Измените фильтры или категорию.'),
-  ).toBeVisible()
+  await expect(page.getByText('Хм, даже у тебя есть не всё? Странно…')).toBeVisible()
   await page.getByRole('button', { name: 'Сбросить фильтры' }).click()
   await page.getByRole('button', { name: 'Открыть: Серьги, Белое золото' }).click()
   page.once('dialog', (dialog) => dialog.dismiss())
@@ -157,7 +252,9 @@ test('creates, reloads, changes size format, filters and deletes without orphan 
   await expect(page.getByRole('dialog')).toBeVisible()
   page.once('dialog', (dialog) => dialog.accept())
   await page.getByRole('button', { name: 'Удалить украшение', exact: true }).click()
-  await expect(page.getByText('В шкатулке пока нет украшений. Добавьте первое.')).toBeVisible()
+  await expect(
+    page.getByText('Здесь пока пусто. Это явно недоразумение. Надо исправлять!'),
+  ).toBeVisible()
   const counts = await page.evaluate(
     () =>
       new Promise<number[]>((resolve, reject) => {
@@ -210,12 +307,12 @@ test('enforces photo limit, retains form on write failure and warns before disca
   await page.getByRole('button', { name: 'Редактировать', exact: true }).click()
   await page.getByRole('button', { name: 'Удалить фото 1' }).click()
   await page.getByRole('button', { name: 'Сохранить украшение', exact: true }).click()
-  await expect(page.getByText('Добавьте хотя бы одну фотографию')).toBeVisible()
-  page.once('dialog', (dialog) => dialog.dismiss())
+  await expect(page.getByText('Добавь хотя бы одну фотографию')).toBeVisible()
   await page.getByRole('button', { name: 'Отмена', exact: true }).click()
-  await expect(page.getByRole('dialog')).toBeVisible()
-  page.once('dialog', (dialog) => dialog.accept())
+  await page.getByRole('button', { name: 'Остаться', exact: true }).click()
+  await expect(page.getByRole('dialog', { name: 'Редактировать украшение' })).toBeVisible()
   await page.getByRole('button', { name: 'Отмена', exact: true }).click()
+  await page.getByRole('button', { name: 'Выйти без сохранения', exact: true }).click()
   await page.getByRole('button', { name: 'Открыть: Кольца, Белое золото' }).click()
   await expect(page.getByRole('dialog').locator('img')).toBeVisible()
 })
@@ -337,7 +434,7 @@ for (const theme of ['light', 'dark'] as const) {
       await swipe(110)
       await expect(viewer.getByRole('status', { name: 'Номер фотографии' })).toHaveText('1 / 2')
       await viewer
-        .getByRole('button', { name: 'Фотография, используйте стрелки для переключения' })
+        .getByRole('button', { name: 'Фотография, используй стрелки для переключения' })
         .focus()
       await page.keyboard.press('ArrowRight')
       await expect(viewer.getByRole('status', { name: 'Номер фотографии' })).toHaveText('2 / 2')
@@ -365,6 +462,37 @@ for (const theme of ['light', 'dark'] as const) {
       await save(page)
       await page.getByRole('button', { name: 'Фильтры', exact: true }).tap()
       const modal = page.getByRole('dialog', { name: 'Фильтры', exact: true })
+      await expect(modal.getByRole('combobox')).toHaveCount(0)
+      const metalTags = modal.getByRole('group', { name: 'Металл', exact: true })
+      const gold = metalTags.getByRole('button', { name: 'Белое золото', exact: true })
+      const silver = metalTags.getByRole('button', { name: 'Серебро', exact: true })
+      await gold.tap()
+      await silver.tap()
+      await expect(gold).toHaveAttribute('aria-pressed', 'true')
+      await expect(silver).toHaveAttribute('aria-pressed', 'true')
+      const amethyst = modal
+        .getByRole('group', { name: 'Камни', exact: true })
+        .getByRole('button', { name: 'Аметист', exact: true })
+      await amethyst.focus()
+      await page.keyboard.press('Space')
+      await expect(amethyst).toHaveAttribute('aria-pressed', 'true')
+      await page.keyboard.press('Enter')
+      await expect(amethyst).toHaveAttribute('aria-pressed', 'false')
+      const layout = await metalTags.evaluate((element) => {
+        const rects = Array.from(element.querySelectorAll('button')).map((button) =>
+          button.getBoundingClientRect(),
+        )
+        return {
+          rows: new Set(rects.map((rect) => Math.round(rect.y))).size,
+          sameRow: rects.some((rect, index) =>
+            rects.some(
+              (other, otherIndex) => index !== otherIndex && Math.abs(rect.y - other.y) < 1,
+            ),
+          ),
+        }
+      })
+      expect(layout.rows).toBeGreaterThan(1)
+      expect(layout.sameRow).toBe(true)
       const min = modal.getByRole('textbox', { name: 'Вес от, г' })
       const max = modal.getByRole('textbox', { name: 'Вес до, г' })
       await min.fill('4')
@@ -384,17 +512,39 @@ for (const theme of ['light', 'dark'] as const) {
       await modal.getByRole('button', { name: 'Закрыть фильтры' }).tap()
       await page.getByRole('button', { name: 'Фильтры', exact: true }).tap()
       await expect(min).toHaveValue('')
+      await expect(gold).toHaveAttribute('aria-pressed', 'false')
+      await expect(silver).toHaveAttribute('aria-pressed', 'false')
       await min.fill('4')
       await max.fill('5')
       await page.screenshot({ path: 'test-results/filter-modal-' + theme + '.png' })
       await modal.getByRole('button', { name: 'Применить фильтры' }).tap()
       await expect(modal).toBeHidden()
       await expect(page.getByText('Вес от 4 до 5 г', { exact: true })).toBeVisible()
-      await expect(
-        page.getByText('По выбранным условиям украшений нет. Измените фильтры или категорию.'),
-      ).toBeVisible()
+      await expect(page.getByText('Хм, даже у тебя есть не всё? Странно…')).toBeVisible()
       await page.getByRole('button', { name: 'Сбросить фильтры' }).tap()
       await expect(page.getByText('Вес от 4 до 5 г', { exact: true })).toHaveCount(0)
+      await expect(
+        page.getByRole('button', { name: 'Открыть: Кольца, Белое золото' }),
+      ).toBeVisible()
+      await page.getByRole('button', { name: 'Фильтры', exact: true }).tap()
+      await gold.tap()
+      await silver.tap()
+      await modal.getByRole('button', { name: 'Применить фильтры' }).tap()
+      await expect(
+        page.getByRole('button', { name: 'Открыть: Кольца, Белое золото' }),
+      ).toBeVisible()
+      await page.getByRole('button', { name: 'Фильтры', exact: true }).tap()
+      await expect(gold).toHaveAttribute('aria-pressed', 'true')
+      await expect(silver).toHaveAttribute('aria-pressed', 'true')
+      await amethyst.tap()
+      await modal.getByRole('heading', { name: 'Фильтры', exact: true }).scrollIntoViewIfNeeded()
+      await page.screenshot({ path: 'test-results/filter-modal-' + theme + '.png' })
+      expect(await modal.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(
+        true,
+      )
+      await modal.getByRole('button', { name: 'Применить фильтры' }).tap()
+      await expect(page.getByText('Хм, даже у тебя есть не всё? Странно…')).toBeVisible()
+      await page.getByRole('button', { name: 'Сбросить фильтры' }).tap()
       await expect(
         page.getByRole('button', { name: 'Открыть: Кольца, Белое золото' }),
       ).toBeVisible()

@@ -1,3 +1,28 @@
+.photoSaveOptions {
+  display: grid;
+  gap: var(--space-3);
+  padding-block: var(--space-3);
+  min-width: 0;
+  p {
+    margin: 0;
+    color: var(--fg-soft);
+    font-size: var(--font-size-small);
+  }
+  summary {
+    cursor: pointer;
+    min-height: var(--control-size);
+    padding-block: var(--space-2);
+  }
+  :global(.mantine-Button-root) {
+    height: auto;
+    min-height: var(--control-size);
+    max-width: 100%;
+  }
+  :global(.mantine-Button-label) {
+    white-space: normal;
+  }
+}
+
 .details {
   display: grid;
   gap: var(--space-3);
@@ -22,6 +47,11 @@
   :global(.mantine-Button-label) {
     white-space: normal;
   }
+}
+.stones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
 }
 .imageButton {
   display: block;

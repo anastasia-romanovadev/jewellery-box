@@ -111,7 +111,7 @@ describe('catalog persistence', () => {
     expect(new Set(migrated.template.fields.map((field) => field.order)).size).toBe(
       migrated.template.fields.length,
     )
-    expect(migrated.entries).toEqual(original.entries)
+    expect(migrated.entries.filter((entry) => entry.enabled)).toEqual(original.entries)
     expect(await getAppearance(db)).toEqual(appearance)
     db.close()
     await db.open()

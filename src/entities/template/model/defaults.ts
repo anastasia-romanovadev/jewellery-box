@@ -1,4 +1,6 @@
 import type { TemplateField, CreationTemplate, DictionaryEntry } from './types'
+import { FINENESS_METALS } from './dictionary-options'
+import { JEWELRY_TYPES } from './jewelry-types'
 
 export function builtinFields(): TemplateField[] {
   return [
@@ -119,41 +121,39 @@ export const FINENESS_LABELS = [
 ]
 
 export const DEFAULT_DICTIONARIES: DictionaryEntry[] = [
-  ...FINENESS_LABELS.map((label): DictionaryEntry => ({
-    id: 'fineness-' + label,
-    kind: 'fineness',
-    label,
+  ...FINENESS_METALS.flatMap((metal) =>
+    metal.values.map((label): DictionaryEntry => ({
+      id: `fineness-${metal.value}-${label}`,
+      kind: 'fineness',
+      metal: metal.value,
+      label,
+      enabled: true,
+      revision: 1,
+    })),
+  ),
+  ...JEWELRY_TYPES.map((type): DictionaryEntry => ({
+    ...type,
+    kind: 'type',
     enabled: true,
     revision: 1,
   })),
-  { id: 'ring', kind: 'type', label: 'Кольца', enabled: true, revision: 1, sizeKind: 'ring' },
-  {
-    id: 'earrings',
-    kind: 'type',
-    label: 'Серьги',
-    enabled: true,
-    revision: 1,
-    sizeKind: 'earring',
-  },
-  { id: 'chain', kind: 'type', label: 'Цепи', enabled: true, revision: 1, sizeKind: 'length' },
-  {
-    id: 'bracelet',
-    kind: 'type',
-    label: 'Браслеты',
-    enabled: true,
-    revision: 1,
-    sizeKind: 'length',
-  },
-  { id: 'brooch', kind: 'type', label: 'Броши', enabled: true, revision: 1, sizeKind: 'none' },
-  { id: 'other', kind: 'type', label: 'Прочее', enabled: true, revision: 1, sizeKind: 'none' },
   { id: 'gold-white', kind: 'material', label: 'Белое золото', enabled: true, revision: 1 },
   { id: 'gold-red', kind: 'material', label: 'Красное золото', enabled: true, revision: 1 },
   { id: 'gold-yellow', kind: 'material', label: 'Жёлтое золото', enabled: true, revision: 1 },
   { id: 'silver', kind: 'material', label: 'Серебро', enabled: true, revision: 1 },
   { id: 'platinum', kind: 'material', label: 'Платина', enabled: true, revision: 1 },
-  { id: 'diamond', kind: 'stone', label: 'Бриллиант', enabled: true, revision: 1 },
-  { id: 'pearl', kind: 'stone', label: 'Жемчуг', enabled: true, revision: 1 },
-  { id: 'ruby', kind: 'stone', label: 'Рубин', enabled: true, revision: 1 },
-  { id: 'sapphire', kind: 'stone', label: 'Сапфир', enabled: true, revision: 1 },
-  { id: 'emerald', kind: 'stone', label: 'Изумруд', enabled: true, revision: 1 },
+  {
+    id: 'diamond',
+    kind: 'stone',
+    label: 'Бриллиант',
+    color: '#d5e4ed',
+    enabled: true,
+    revision: 1,
+  },
+  { id: 'pearl', kind: 'stone', label: 'Жемчуг', color: '#eee2cf', enabled: true, revision: 1 },
+  { id: 'ruby', kind: 'stone', label: 'Рубин', color: '#ab3658', enabled: true, revision: 1 },
+  { id: 'sapphire', kind: 'stone', label: 'Сапфир', color: '#4769a3', enabled: true, revision: 1 },
+  { id: 'emerald', kind: 'stone', label: 'Изумруд', color: '#438168', enabled: true, revision: 1 },
+  { id: 'amethyst', kind: 'stone', label: 'Аметист', color: '#9670b3', enabled: true, revision: 1 },
+  { id: 'topaz', kind: 'stone', label: 'Топаз', color: '#88bfd3', enabled: true, revision: 1 },
 ]

@@ -19,7 +19,7 @@ export function TemplateSettings() {
           <Button onClick={retry}>Повторить загрузку шаблона</Button>
         </Alert>
       )}
-      {loading && <Text role="status">Загружаем шаблон и справочники…</Text>}
+      {loading && <Text role="status">Загружаю шаблон и справочники…</Text>}
       {catalog && (
         <TemplateEditor
           template={catalog.template}
@@ -36,9 +36,10 @@ export function TemplateSettings() {
       {catalog && (
         <DictionaryEditor
           entries={catalog.entries}
-          onSave={async (draft) => {
+          generation={catalog.generation}
+          onSave={async (draft, expectedGeneration) => {
             try {
-              return await saveDictionaryEntry(draft)
+              return await saveDictionaryEntry(draft, undefined, expectedGeneration)
             } catch (reason) {
               throw new Error(storageErrorMessage(reason), { cause: reason })
             }

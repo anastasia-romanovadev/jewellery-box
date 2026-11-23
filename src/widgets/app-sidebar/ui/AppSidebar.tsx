@@ -5,7 +5,7 @@ import { useFocusReturn } from '@mantine/hooks'
 import { CategoryFilter } from '../../../features/collection-category/ui/CategoryFilter'
 import classes from './AppSidebar.module.scss'
 
-export type AppSection = 'collection' | 'settings'
+export type AppSection = 'collection' | 'analytics' | 'settings'
 
 type AppSidebarProps = {
   activeSection: AppSection
@@ -14,6 +14,7 @@ type AppSidebarProps = {
   onSelectCategory: (category: CategoryFilterId) => void
   onNavigate: (section: AppSection) => void
   onClose: () => void
+  fact: string
 }
 
 export function AppSidebar({
@@ -23,6 +24,7 @@ export function AppSidebar({
   onClose,
   selectedCategory,
   onSelectCategory,
+  fact,
 }: AppSidebarProps) {
   const [categoriesOpen, setCategoriesOpen] = useState(false)
   const showCategories = categoriesOpen && activeSection === 'collection'
@@ -78,6 +80,17 @@ export function AppSidebar({
             </div>
             <button
               type="button"
+              className={`${classes.navButton} ${activeSection === 'analytics' ? classes.active : ''}`}
+              aria-current={activeSection === 'analytics' ? 'page' : undefined}
+              onClick={() => {
+                setCategoriesOpen(false)
+                onNavigate('analytics')
+              }}
+            >
+              Аналитика
+            </button>
+            <button
+              type="button"
               className={`${classes.navButton} ${activeSection === 'settings' ? classes.active : ''}`}
               aria-current={activeSection === 'settings' ? 'page' : undefined}
               onClick={() => {
@@ -88,8 +101,8 @@ export function AppSidebar({
               Настройки
             </button>
           </nav>
-          <p className={classes.note}>
-            Личная коллекция украшений — аккуратно собрана и всегда под рукой.
+          <p className={classes.note} aria-label="Факт о коллекции">
+            {fact}
           </p>
         </aside>
       </FocusTrap>

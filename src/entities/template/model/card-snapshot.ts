@@ -3,6 +3,7 @@ import { identifier, label, sizeKindSchema } from './validation'
 import { fieldSchema, parseTemplate, validateTemplateReferences } from './template-definition'
 import { parseDictionaryEntry } from './dictionary'
 import { builtinFields } from './defaults'
+import { dictionaryOption } from './dictionary-options'
 import type {
   CreationTemplate,
   DictionaryEntry,
@@ -12,7 +13,19 @@ import type {
 } from './types'
 
 const optionsSchema = z
-  .array(z.object({ id: identifier, label }).strict())
+  .array(
+    z
+      .object({
+        id: identifier,
+        label,
+        metal: z.enum(['gold', 'silver', 'platinum']).optional(),
+        color: z
+          .string()
+          .regex(/^#[0-9a-fA-F]{6}$/)
+          .optional(),
+      })
+      .strict(),
+  )
   .refine(
     (options) => new Set(options.map((option) => option.id)).size === options.length,
     'Варианты снимка не должны повторяться',
@@ -93,11 +106,9 @@ export function buildCardSnapshot(
   const type = dictionaries.find(
     (entry) => entry.kind === 'type' && entry.id === typeId && entry.enabled,
   )
-  if (!type || type.sizeKind === undefined) throw new Error('Выберите доступный тип изделия')
+  if (!type || type.sizeKind === undefined) throw new Error('Выбери доступный тип изделия')
   const options = (kind: DictionaryKind) =>
-    dictionaries
-      .filter((entry) => entry.kind === kind && entry.enabled)
-      .map(({ id, label }) => ({ id, label }))
+    dictionaries.filter((entry) => entry.kind === kind && entry.enabled).map(dictionaryOption)
   const materials = options('material')
   const stones = options('stone')
   const fields: SnapshotField[] = validated.fields

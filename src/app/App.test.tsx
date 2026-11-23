@@ -38,7 +38,7 @@ function contrastRatio(foreground: string, background: string) {
 }
 
 describe('foundation app', () => {
-  it('keeps text and controls readable in all six theme/accent combinations', () => {
+  it('keeps text and controls readable in every theme/accent combination', () => {
     for (const theme of ['light', 'dark'] as const) {
       for (const accent of ACCENT_OPTIONS) {
         applyAppearance(theme, accent.value)
@@ -70,7 +70,7 @@ describe('foundation app', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Серьги' }))
 
     expect(
-      await screen.findByText('В шкатулке пока нет украшений. Добавьте первое.'),
+      await screen.findByText('Здесь пока пусто. Это явно недоразумение. Надо исправлять!'),
     ).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Серьги' })).toHaveAttribute('aria-pressed', 'true')
     expect(screen.queryByText('Кольцо «Роза»')).not.toBeInTheDocument()
@@ -82,7 +82,10 @@ describe('foundation app', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Настройки' }))
 
     await waitFor(() => expect(window.location.hash).toBe('#/settings'))
-    expect(await screen.findByRole('heading', { name: 'Настройки' })).toBeInTheDocument()
+    // Lazy module transforms can exceed one second during parallel test runs.
+    expect(
+      await screen.findByRole('heading', { name: 'Настройки' }, { timeout: 5000 }),
+    ).toBeInTheDocument()
   })
 
   it('opens a settings hash URL directly', async () => {
@@ -171,17 +174,14 @@ describe('foundation app', () => {
     expect(document.documentElement.dataset.mantineColorScheme).toBe('dark')
   })
 
-  it('shows a themed field, button, accessible error, and dialog preview', async () => {
+  it('shows real settings without the demonstration preview', async () => {
     renderApp()
     fireEvent.click(screen.getByRole('button', { name: 'Настройки' }))
     await screen.findByRole('heading', { name: 'Настройки' })
 
-    expect(screen.getByRole('textbox', { name: 'Название украшения' })).toBeInTheDocument()
-    expect(screen.getByRole('alert')).toHaveTextContent('Ошибка сохранения')
-
-    fireEvent.click(screen.getByRole('button', { name: 'Открыть диалог' }))
-    expect(await screen.findByRole('dialog')).toHaveTextContent('Пример диалога')
-    expect(screen.getByRole('button', { name: 'Закрыть диалог' })).toBeInTheDocument()
+    expect(screen.queryByText('Проверка оформления')).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Открыть диалог' })).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Синий' })).toBeInTheDocument()
   })
 })
 
@@ -237,7 +237,7 @@ describe('foundation regressions', () => {
       ),
     )
     fireEvent.click(screen.getByRole('button', { name: 'Серьги' }))
-    await screen.findByText('В шкатулке пока нет украшений. Добавьте первое.')
+    await screen.findByText('Здесь пока пусто. Это явно недоразумение. Надо исправлять!')
     expect(screen.queryByText('Кольцо «Роза»')).not.toBeInTheDocument()
     expect(menu).toHaveAttribute('aria-expanded', 'false')
     await waitFor(() => expect(menu).toHaveFocus())

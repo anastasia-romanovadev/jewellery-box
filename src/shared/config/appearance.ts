@@ -1,5 +1,5 @@
 export type ThemeMode = 'system' | 'light' | 'dark'
-export type AccentTone = 'burgundy' | 'forest' | 'ochre'
+export type AccentTone = 'burgundy' | 'forest' | 'ochre' | 'blue'
 
 export type AccentOption = {
   label: string
@@ -40,6 +40,13 @@ export const ACCENT_OPTIONS: AccentOption[] = [
     accent: '#85551f',
     accentSoft: '#f8f0e4',
     accentStrong: '#694116',
+  },
+  {
+    label: 'Синий',
+    value: 'blue',
+    accent: '#486581',
+    accentSoft: '#e9eff5',
+    accentStrong: '#334e68',
   },
 ]
 

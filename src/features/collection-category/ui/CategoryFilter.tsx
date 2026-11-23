@@ -1,4 +1,5 @@
 import { useCatalog } from '../../../data/useCatalog'
+import { sortJewelryTypes } from '../../../entities/template/model/jewelry-types'
 import { JEWELRY_CATEGORIES, type CategoryFilterId } from '../../../entities/jewelry/model/jewelry'
 import classes from './CategoryFilter.module.scss'
 
@@ -12,14 +13,14 @@ export function CategoryFilter({ selectedCategory, onSelect }: CategoryFilterPro
   const categories = catalog
     ? [
         { id: 'all', label: 'Все' },
-        ...catalog.entries
-          .filter(
+        ...sortJewelryTypes(
+          catalog.entries.filter(
             (entry) => entry.kind === 'type' && (entry.enabled || entry.id === selectedCategory),
-          )
-          .map((entry) => ({
-            id: entry.id,
-            label: entry.label + (entry.enabled ? '' : ' (удалён)'),
-          })),
+          ),
+        ).map((entry) => ({
+          id: entry.id,
+          label: entry.label + (entry.enabled ? '' : ' (удалён)'),
+        })),
       ]
     : JEWELRY_CATEGORIES
   return (

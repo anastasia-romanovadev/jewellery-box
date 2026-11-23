@@ -2,11 +2,11 @@ import type { NewPhoto } from '../../../entities/jewelry/model/item'
 
 export async function preparePhotos(files: File[], existingCount: number): Promise<NewPhoto[]> {
   if (existingCount + files.length > 5)
-    throw new Error('Можно добавить не больше 5 фотографий. Выберите меньше файлов.')
+    throw new Error('Можно добавить не больше 5 фотографий. Выбери меньше файлов.')
   const photos: NewPhoto[] = []
   for (const file of files) {
     if (!file.size || (file.type && !file.type.startsWith('image/')))
-      throw new Error('Выберите файл изображения')
+      throw new Error('Выбери файл изображения')
     const url = URL.createObjectURL(file)
     try {
       const image = new Image()
@@ -24,7 +24,7 @@ export async function preparePhotos(files: File[], existingCount: number): Promi
       })
     } catch {
       throw new Error(
-        'Не удалось открыть фотографию. Этот формат может не поддерживаться браузером; выберите другое фото.',
+        'Не удалось открыть фотографию. Этот формат может не поддерживаться браузером; выбери другое фото.',
       )
     } finally {
       URL.revokeObjectURL(url)

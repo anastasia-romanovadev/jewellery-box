@@ -42,7 +42,7 @@ function validValues(typeId = 'ring'): CardValues {
     typeId,
     materialIds: ['gold-white', 'gold-red'],
     stoneIds: ['diamond', 'ruby'],
-    fineness: 'fineness-585',
+    fineness: 'fineness-gold-585',
     weightGrams: '3,25',
     photoIds: ['photo-1'],
     customValues: {},

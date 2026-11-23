@@ -8,10 +8,15 @@ import type {
   DictionaryOption,
 } from '../../../entities/template/model/template'
 import classes from './JewelryEditor.module.scss'
+import { selectedFineness } from '../../../entities/template/model/material-fineness'
+import { StoneLabel } from '../../../entities/template/ui/StoneLabel'
+import { FinenessFields } from './FinenessFields'
+import { sortJewelryTypes } from '../../../entities/template/model/jewelry-types'
 
 export function JewelryFields({
   snapshot,
   entries,
+  previousValues,
   form,
   disabled,
   onType,
@@ -20,6 +25,7 @@ export function JewelryFields({
 }: {
   snapshot: CardSnapshot
   entries: DictionaryEntry[]
+  previousValues?: CardValues
   form: UseFormReturnType<CardValues>
   disabled: boolean
   onType: (id: string) => void
@@ -31,17 +37,40 @@ export function JewelryFields({
     historical: DictionaryOption[],
     selected: string[],
   ) {
+    const retained =
+      kind === 'material'
+        ? (previousValues?.materialIds ?? [])
+        : kind === 'stone'
+          ? (previousValues?.stoneIds ?? [])
+          : selectedFineness(previousValues)
     const result = new Map(
       entries
         .filter((entry) => entry.kind === kind && entry.enabled)
-        .map((entry) => [entry.id, { value: entry.id, label: entry.label }]),
+        .map((entry) => [
+          entry.id,
+          { value: entry.id, label: entry.label, color: entry.color, metal: entry.metal },
+        ]),
     )
     for (const id of selected) {
+      // Only saved selections own historical labels, colors and metal metadata.
+      if (!retained.includes(id)) continue
       const previous = historical.find((option) => option.id === id)
-      if (previous) result.set(id, { value: id, label: previous.label })
+      if (previous)
+        result.set(id, {
+          value: id,
+          label: previous.label,
+          color: previous.color,
+          metal: previous.metal,
+        })
     }
     return [...result.values()]
   }
+  const materialIds = form.values.materialIds ?? []
+  const finenessOptions = options(
+    'fineness',
+    snapshot.fields.find((field) => field.id === 'fineness')?.options ?? [],
+    selectedFineness(form.values),
+  )
   return (
     <div className={classes.fields} onChange={onChanged}>
       {[...snapshot.fields]
@@ -56,9 +85,9 @@ export function JewelryFields({
                 required={field.required}
                 value={snapshot.typeId}
                 disabled={disabled}
-                data={entries
-                  .filter((entry) => entry.kind === 'type' && entry.enabled)
-                  .map((entry) => ({ value: entry.id, label: entry.label }))}
+                data={sortJewelryTypes(
+                  entries.filter((entry) => entry.kind === 'type' && entry.enabled),
+                ).map((entry) => ({ value: entry.id, label: entry.label }))}
                 onChange={(event) => onType(event.currentTarget.value)}
               />
             )
@@ -95,31 +124,63 @@ export function JewelryFields({
                 )}
                 value={form.values[key] ?? []}
                 error={form.errors[key]}
+                renderOption={
+                  field.id === 'stones'
+                    ? ({ option }) => (
+                        <StoneLabel
+                          label={option.label}
+                          color={
+                            options('stone', snapshot.stones, form.values.stoneIds ?? []).find(
+                              (entry) => entry.value === option.value,
+                            )?.color
+                          }
+                        />
+                      )
+                    : undefined
+                }
                 onChange={(value) => {
                   onChanged()
-                  form.setFieldValue(key, value)
+                  if (key === 'materialIds') {
+                    form.setValues({
+                      materialIds: value,
+                      materialFineness: Object.fromEntries(
+                        Object.entries(form.values.materialFineness ?? {}).filter(([id]) =>
+                          value.includes(id),
+                        ),
+                      ),
+                    })
+                    for (const key of Object.keys(form.errors)) {
+                      if (key.startsWith('materialFineness.')) form.clearFieldError(key)
+                    }
+                  } else form.setFieldValue(key, value)
                 }}
               />
             )
           }
           if (field.id === 'fineness')
             return (
-              <NativeSelect
+              <FinenessFields
                 key={field.id}
                 label={field.label}
-                required
+                required={field.required}
                 disabled={disabled}
-                data={[
-                  { value: '', label: 'Выберите пробу' },
-                  ...options(
-                    'fineness',
-                    field.options ?? [],
-                    form.values.fineness ? [form.values.fineness] : [],
-                  ),
-                ]}
-                value={form.values.fineness ?? ''}
-                error={form.errors.fineness}
-                onChange={(event) => form.setFieldValue('fineness', event.currentTarget.value)}
+                materials={materialIds.map((id) => ({
+                  id,
+                  label:
+                    options('material', snapshot.materials, materialIds).find(
+                      (option) => option.value === id,
+                    )?.label ?? id,
+                }))}
+                options={finenessOptions.map(({ value, ...option }) => ({ ...option, id: value }))}
+                values={form.values.materialFineness ?? {}}
+                errors={form.errors}
+                onChange={(materialId, value) => {
+                  form.setFieldValue('materialFineness', {
+                    ...form.values.materialFineness,
+                    [materialId]: value,
+                  })
+                  form.clearFieldError(`materialFineness.${materialId}`)
+                }}
               />
             )
           if (field.id === 'weight')

@@ -24,6 +24,8 @@ export function PhotoEditor({
 }) {
   const [failure, setFailure] = useState<string | null>(null)
   const busy = useRef(false)
+  const galleryInput = useRef<HTMLInputElement>(null)
+  const cameraInput = useRef<HTMLInputElement>(null)
   async function select(files: File[]) {
     if (!files.length || busy.current) return
     busy.current = true
@@ -57,39 +59,53 @@ export function PhotoEditor({
         </Alert>
       )}
       <Group>
-        <label className={classes.fileLabel}>
+        <Button
+          type="button"
+          variant="default"
+          disabled={disabled}
+          onClick={() => galleryInput.current?.click()}
+        >
           Из галереи
-          <input
-            aria-label="Добавить фотографии из галереи"
-            type="file"
-            accept="image/*"
-            multiple
-            disabled={disabled}
-            onChange={(event) => {
-              // Only successful preparation changes the draft, not the native file selection.
-              event.stopPropagation()
-              const files = Array.from(event.currentTarget.files ?? [])
-              event.currentTarget.value = ''
-              void select(files)
-            }}
-          />
-        </label>
-        <label className={classes.fileLabel}>
+        </Button>
+        <input
+          ref={galleryInput}
+          hidden
+          aria-label="Добавить фотографии из галереи"
+          type="file"
+          accept="image/*"
+          multiple
+          disabled={disabled}
+          onChange={(event) => {
+            // Only successful preparation changes the draft, not the native file selection.
+            event.stopPropagation()
+            const files = Array.from(event.currentTarget.files ?? [])
+            event.currentTarget.value = ''
+            void select(files)
+          }}
+        />
+        <Button
+          type="button"
+          variant="default"
+          disabled={disabled}
+          onClick={() => cameraInput.current?.click()}
+        >
           Снять фото
-          <input
-            aria-label="Снять фотографию"
-            type="file"
-            accept="image/*"
-            capture="environment"
-            disabled={disabled}
-            onChange={(event) => {
-              event.stopPropagation()
-              const files = Array.from(event.currentTarget.files ?? [])
-              event.currentTarget.value = ''
-              void select(files)
-            }}
-          />
-        </label>
+        </Button>
+        <input
+          ref={cameraInput}
+          hidden
+          aria-label="Снять фотографию"
+          type="file"
+          accept="image/*"
+          capture="environment"
+          disabled={disabled}
+          onChange={(event) => {
+            event.stopPropagation()
+            const files = Array.from(event.currentTarget.files ?? [])
+            event.currentTarget.value = ''
+            void select(files)
+          }}
+        />
       </Group>
       <div className={classes.photos}>
         {ids.map((id, index) => (

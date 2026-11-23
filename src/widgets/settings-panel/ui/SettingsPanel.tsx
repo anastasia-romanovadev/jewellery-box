@@ -2,7 +2,6 @@ import { TemplateSettings } from '../../template-settings/ui/TemplateSettings'
 import { AppearanceSettings } from '../../../features/appearance-settings/ui/AppearanceSettings'
 import { InstallGuide } from '../../../features/install-guide/ui/InstallGuide'
 import type { useAppearanceSettings } from '../../../features/appearance-settings/model/useAppearanceSettings'
-import { AppearanceComponentPreview } from '../../appearance-component-preview/ui/AppearanceComponentPreview'
 import classes from './SettingsPanel.module.scss'
 
 type SettingsPanelProps = ReturnType<typeof useAppearanceSettings>
@@ -19,7 +18,6 @@ export function SettingsPanel(settings: SettingsPanelProps) {
       />
       <TemplateSettings />
       <InstallGuide />
-      <AppearanceComponentPreview />
     </div>
   )
 }

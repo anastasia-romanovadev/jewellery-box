@@ -37,20 +37,6 @@
     grid-template-columns: 1fr;
   }
 }
-.fileLabel {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  width: 100%;
-  min-width: 0;
-  gap: var(--space-2);
-  max-width: 100%;
-  input {
-    width: 100%;
-    min-width: 0;
-    max-width: 100%;
-    min-height: var(--control-size);
-  }
-}
 .fields {
   display: grid;
   grid-template-columns: minmax(0, 1fr);

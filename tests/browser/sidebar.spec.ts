@@ -39,7 +39,9 @@ for (const width of [390, 1440])
       await collection.click()
       await page.getByRole('button', { name: 'Серьги', exact: true }).click()
       await expect(
-        page.getByText('В шкатулке пока нет украшений. Добавьте первое.', { exact: true }),
+        page.getByText('Здесь пока пусто. Это явно недоразумение. Надо исправлять!', {
+          exact: true,
+        }),
       ).toBeVisible()
       await expect(page.getByText('Кольцо «Роза»', { exact: true })).toHaveCount(0)
       if (mobile) {

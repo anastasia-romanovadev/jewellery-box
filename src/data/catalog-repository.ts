@@ -15,13 +15,13 @@ const appearanceSchema = z.object({
   id: z.literal('appearance'),
   revision: z.number().int().positive(),
   themeMode: z.enum(['system', 'light', 'dark']),
-  accentTone: z.enum(['burgundy', 'forest', 'ochre']),
+  accentTone: z.enum(['burgundy', 'forest', 'ochre', 'blue']),
 })
 
 export class ConflictError extends Error {
   constructor() {
     super(
-      'Данные изменились в другой вкладке. Ваши правки сохранены в редакторе. Загрузите актуальную версию перед повторным редактированием.',
+      'Данные изменились в другой вкладке. Твои правки сохранены в редакторе. Загрузи актуальную версию перед повторным редактированием.',
     )
     this.name = 'ConflictError'
   }
@@ -30,9 +30,9 @@ export class ConflictError extends Error {
 export function storageErrorMessage(error: unknown): string {
   if (error instanceof ConflictError) return error.message
   if (error instanceof z.ZodError)
-    return 'Данные не прошли проверку. Проверьте заполнение полей; сохранённые данные не изменены.'
+    return 'Данные не прошли проверку. Проверь заполнение полей; сохранённые данные не изменены.'
   if (error instanceof CatalogValidationError) return error.message
-  return 'Не удалось обратиться к хранилищу. Проверьте доступ браузера и свободное место, затем повторите попытку.'
+  return 'Не удалось обратиться к хранилищу. Проверь доступ браузера и свободное место, затем повтори попытку.'
 }
 
 class CatalogValidationError extends Error {}
@@ -58,7 +58,16 @@ export async function initializeDatabase(db: JewelleryDatabase = database): Prom
   })
 }
 
-export type Catalog = { template: CreationTemplate; entries: DictionaryEntry[] }
+export type Catalog = {
+  template: CreationTemplate
+  entries: DictionaryEntry[]
+  generation?: number
+}
+
+export async function readDataGeneration(db: JewelleryDatabase = database): Promise<number> {
+  const record = await db.restoreState.get('generation')
+  return record ? z.number().int().nonnegative().safe().parse(record.value) : 0
+}
 
 export async function getCatalog(db: JewelleryDatabase = database): Promise<Catalog> {
   await initializeDatabase(db)
@@ -66,7 +75,8 @@ export async function getCatalog(db: JewelleryDatabase = database): Promise<Cata
 }
 
 export async function readCatalog(db: JewelleryDatabase = database): Promise<Catalog> {
-  return db.transaction('r', db.templates, db.dictionaries, async () => ({
+  return db.transaction('r', db.templates, db.dictionaries, db.restoreState, async () => ({
+    generation: await readDataGeneration(db),
     template: parseTemplate(await db.templates.get('creation')),
     entries: (await db.dictionaries.toArray()).map(parseDictionaryEntry),
   }))
@@ -95,7 +105,7 @@ export async function saveTemplate(
           (!type.enabled && !(Array.isArray(priorScope) && priorScope.includes(typeId)))
         ) {
           throw new CatalogValidationError(
-            'Выбранный тип изделия больше недоступен. Проверьте область применения поля.',
+            'Выбранный тип изделия больше недоступен. Проверь область применения поля.',
           )
         }
       }
@@ -109,18 +119,23 @@ export async function saveTemplate(
 export async function saveDictionaryEntry(
   draft: DictionaryEntry,
   db: JewelleryDatabase = database,
+  expectedGeneration?: number,
 ): Promise<DictionaryEntry> {
   const parsed = parseDictionaryEntry(draft)
   if (parsed.kind === 'type')
     throw new CatalogValidationError('Типы изделий фиксированы и не редактируются.')
   await initializeDatabase(db)
-  return db.transaction('rw', db.dictionaries, async () => {
+  return db.transaction('rw', db.dictionaries, db.restoreState, async () => {
+    if (expectedGeneration !== undefined && expectedGeneration !== (await readDataGeneration(db)))
+      throw new ConflictError()
     const raw = await db.dictionaries.get(parsed.id)
     const current = raw ? parseDictionaryEntry(raw) : undefined
     if (current ? current.revision !== parsed.revision : parsed.revision !== 0)
       throw new ConflictError()
     if (current && current.kind !== parsed.kind)
       throw new CatalogValidationError('Нельзя переносить значение в другой справочник.')
+    if (current && current.metal !== parsed.metal)
+      throw new CatalogValidationError('Нельзя переносить пробу в другой металл.')
     if (!current && !parsed.enabled)
       throw new CatalogValidationError('Нельзя создать удалённый вариант.')
     if (parsed.enabled) {
@@ -132,6 +147,7 @@ export async function saveDictionaryEntry(
         others.some(
           (entry) =>
             entry.id !== parsed.id &&
+            entry.metal === parsed.metal &&
             entry.enabled &&
             normalizeDictionaryLabel(entry.label) === normalized,
         )

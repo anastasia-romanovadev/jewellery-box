@@ -19,6 +19,38 @@ function editor(
 }
 
 describe('dictionary editor', () => {
+  it('keeps old generation and draft across restore until explicit reset', async () => {
+    const save = vi
+      .fn<(draft: DictionaryEntry, generation?: number) => Promise<DictionaryEntry>>()
+      .mockRejectedValueOnce(new Error('Конфликт восстановления'))
+      .mockImplementation(async (draft) => ({ ...draft, revision: 1 }))
+    const session = (generation: number) => (
+      <MantineProvider>
+        <DictionaryEditor entries={DEFAULT_DICTIONARIES} generation={generation} onSave={save} />
+      </MantineProvider>
+    )
+    const view = render(session(0))
+    fireEvent.click(screen.getByRole('button', { name: 'Справочники' }))
+    fireEvent.change(screen.getByLabelText('Название варианта'), {
+      target: { value: 'Мой материал' },
+    })
+    view.rerender(session(1))
+    expect(screen.getByLabelText('Название варианта')).toHaveValue('Мой материал')
+    fireEvent.click(screen.getByRole('button', { name: 'Добавить вариант' }))
+    await screen.findByText('Конфликт восстановления')
+    expect(save.mock.calls[0][1]).toBe(0)
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Отменить черновики и загрузить справочники' }),
+    )
+    expect(screen.getByLabelText('Название варианта')).toHaveValue('')
+    fireEvent.change(screen.getByLabelText('Название варианта'), {
+      target: { value: 'Новый материал' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'Добавить вариант' }))
+    await screen.findByText('Справочник сохранён.')
+    expect(save.mock.calls[1][1]).toBe(1)
+  })
+
   it.each(['cancel', 'save'])('restores focus to the row after %s', async (action) => {
     const save = vi
       .fn<(draft: DictionaryEntry) => Promise<DictionaryEntry>>()
@@ -55,7 +87,7 @@ describe('dictionary editor', () => {
     render(editor(save))
     fireEvent.click(screen.getByRole('button', { name: 'Справочники' }))
     fireEvent.click(screen.getByRole('button', { name: 'Добавить вариант' }))
-    expect(screen.getByText('Введите название')).toBeInTheDocument()
+    expect(screen.getByText('Введи название')).toBeInTheDocument()
     const material = DEFAULT_DICTIONARIES.find((entry) => entry.kind === 'material')
     if (!material) throw new Error('Expected a default material')
     fireEvent.change(screen.getByRole('textbox', { name: 'Название варианта' }), {

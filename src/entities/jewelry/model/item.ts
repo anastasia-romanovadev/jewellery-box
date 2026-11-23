@@ -29,6 +29,7 @@ const itemSchema = z
     materialIds: ids,
     stoneIds: ids,
     finenessId: id.optional(),
+    materialFineness: z.record(id, id).optional(),
     weightGrams: z.number().finite().positive().optional(),
     size: z
       .union([z.number().finite().positive(), z.enum(['small', 'medium', 'large'])])
@@ -65,6 +66,8 @@ export function itemValues(item: JewelryItem): CardValues {
     materialIds: [...item.materialIds],
     stoneIds: [...item.stoneIds],
     fineness: item.finenessId,
+    materialFineness:
+      item.materialFineness === undefined ? undefined : { ...item.materialFineness },
     weightGrams: item.weightGrams,
     size: item.size,
     notes: item.notes,
@@ -87,7 +90,16 @@ export function normalizeValues(snapshot: CardSnapshot, values: CardValues) {
     typeId: snapshot.typeId,
     materialIds: has('materials') ? (values.materialIds ?? []) : [],
     stoneIds: has('stones') ? (values.stoneIds ?? []) : [],
-    finenessId: has('fineness') ? values.fineness || undefined : undefined,
+    finenessId:
+      has('fineness') && values.materialFineness === undefined
+        ? values.fineness || undefined
+        : undefined,
+    materialFineness:
+      values.materialFineness === undefined
+        ? undefined
+        : has('fineness') && has('materials')
+          ? { ...values.materialFineness }
+          : {},
     weightGrams: has('weight')
       ? (parsePositiveNumber(values.weightGrams ?? '') ?? undefined)
       : undefined,

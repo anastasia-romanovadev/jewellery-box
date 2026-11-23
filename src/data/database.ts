@@ -1,13 +1,15 @@
 import Dexie, { type Table } from 'dexie'
+import type { MetalPrice } from '../entities/jewelry/model/pricing'
 import {
   DEFAULT_TEMPLATE,
   parseTemplate,
+  normalizeDictionaryLabel,
   type CreationTemplate,
   type DictionaryEntry,
 } from '../entities/template/model/template'
 import type { AppearanceSettings } from '../shared/lib/appearance-cache'
 import type { JewelryItem, PhotoRecord } from '../entities/jewelry/model/item'
-import { DEFAULT_DICTIONARIES } from '../entities/template/model/defaults'
+import { DEFAULT_DICTIONARIES, FINENESS_LABELS } from '../entities/template/model/defaults'
 
 export type AppearanceRecord = AppearanceSettings & { id: 'appearance'; revision: number }
 
@@ -17,6 +19,8 @@ export class JewelleryDatabase extends Dexie {
   settings!: Table<AppearanceRecord, string>
   items!: Table<JewelryItem, string>
   photos!: Table<PhotoRecord, string>
+  metalPrices!: Table<MetalPrice, string>
+  restoreState!: Table<{ id: 'generation'; value: number }, string>
 
   constructor(name = 'jewellery-box') {
     super(name)
@@ -74,7 +78,14 @@ export class JewelleryDatabase extends Dexie {
             }),
           )
           const dictionaries = transaction.table<DictionaryEntry, string>('dictionaries')
-          for (const entry of DEFAULT_DICTIONARIES.filter((entry) => entry.kind === 'fineness')) {
+          // Keep the historical v3 migration independent of later seed changes.
+          for (const entry of FINENESS_LABELS.map((label): DictionaryEntry => ({
+            id: `fineness-${label}`,
+            kind: 'fineness',
+            label,
+            enabled: true,
+            revision: 1,
+          }))) {
             if (!(await dictionaries.get(entry.id))) await dictionaries.add(entry)
           }
           // Fixed categories are selectable again after the former editable-type prototype.
@@ -90,6 +101,84 @@ export class JewelleryDatabase extends Dexie {
           }
         }
       })
+    this.version(4)
+      .stores({
+        templates: 'id',
+        dictionaries: 'id, kind',
+        settings: 'id',
+        items: 'id, typeId, createdAt',
+        photos: 'id, itemId',
+      })
+      .upgrade(async (transaction) => {
+        const dictionaries = transaction.table<DictionaryEntry, string>('dictionaries')
+        const existing = await dictionaries.toArray()
+        for (const seed of DEFAULT_DICTIONARIES.filter((entry) => entry.kind === 'fineness')) {
+          const legacy = existing.find((entry) => entry.id === `fineness-${seed.label}`)
+          if (!existing.some((entry) => entry.id === seed.id))
+            await dictionaries.add({ ...seed, enabled: legacy?.enabled ?? true })
+        }
+        for (const entry of existing) {
+          // Keep custom labels and every historical ID; never rewrite card snapshots.
+          if (
+            entry.kind === 'fineness' &&
+            !entry.metal &&
+            entry.id === `fineness-${entry.label}` &&
+            FINENESS_LABELS.includes(entry.label) &&
+            entry.enabled
+          )
+            await dictionaries.put({ ...entry, enabled: false, revision: entry.revision + 1 })
+        }
+        for (const seed of DEFAULT_DICTIONARIES.filter((entry) => entry.kind === 'stone')) {
+          const match = existing.find(
+            (entry) =>
+              entry.kind === 'stone' &&
+              normalizeDictionaryLabel(entry.label) === normalizeDictionaryLabel(seed.label),
+          )
+          if (match) {
+            if (!match.color)
+              await dictionaries.put({ ...match, color: seed.color, revision: match.revision + 1 })
+          } else if (
+            ['amethyst', 'topaz'].includes(seed.id) &&
+            !existing.some((entry) => entry.id === seed.id)
+          ) {
+            await dictionaries.add(seed)
+          }
+        }
+      })
+    // v5 introduces per-material assays. Legacy rows remain readable without guessing associations.
+    this.version(5).stores({
+      templates: 'id',
+      dictionaries: 'id, kind',
+      settings: 'id',
+      items: 'id, typeId, createdAt',
+      photos: 'id, itemId',
+    })
+    this.version(6)
+      .stores({
+        templates: 'id',
+        dictionaries: 'id, kind',
+        settings: 'id',
+        items: 'id, typeId, createdAt',
+        photos: 'id, itemId',
+      })
+      .upgrade(async (transaction) => {
+        const dictionaries = transaction.table<DictionaryEntry, string>('dictionaries')
+        if (
+          (await transaction.table('templates').get('creation')) &&
+          !(await dictionaries.get('pendant'))
+        ) {
+          await dictionaries.add({
+            id: 'pendant',
+            kind: 'type',
+            label: 'Подвески',
+            sizeKind: 'none',
+            enabled: true,
+            revision: 1,
+          })
+        }
+      })
+    this.version(7).stores({ metalPrices: 'id' })
+    this.version(8).stores({ restoreState: 'id' })
   }
 }
 

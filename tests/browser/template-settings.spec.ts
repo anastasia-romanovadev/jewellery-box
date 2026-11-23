@@ -224,7 +224,7 @@ for (const width of [320, 390, 1440]) {
         page.getByLabel('Название варианта «Белое золото»', { exact: true }),
       ).toBeFocused()
       await expect(page.getByRole('button', { name: 'Зелёный', exact: true })).toBeEnabled()
-      for (const accent of ['Бордовый', 'Зелёный', 'Охра']) {
+      for (const accent of ['Бордовый', 'Зелёный', 'Охра', 'Синий']) {
         const button = page.getByRole('button', { name: accent, exact: true })
         await button.click()
         await expect(button).toBeEnabled()

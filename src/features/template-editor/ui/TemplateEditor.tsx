@@ -8,6 +8,7 @@ import {
   type TemplateField,
 } from '../../../entities/template/model/template'
 import classes from './TemplateEditor.module.scss'
+import { sortJewelryTypes } from '../../../entities/template/model/jewelry-types'
 
 type TemplateEditorProps = {
   template: CreationTemplate
@@ -24,9 +25,11 @@ type ScopeControlProps = {
 }
 
 function ScopeControl({ label, scope, entries, disabled, onChange }: ScopeControlProps) {
-  const types = entries.filter(
-    (entry) =>
-      entry.kind === 'type' && (entry.enabled || (scope !== 'all' && scope.includes(entry.id))),
+  const types = sortJewelryTypes(
+    entries.filter(
+      (entry) =>
+        entry.kind === 'type' && (entry.enabled || (scope !== 'all' && scope.includes(entry.id))),
+    ),
   )
 
   return (
@@ -46,7 +49,7 @@ function ScopeControl({ label, scope, entries, disabled, onChange }: ScopeContro
           label="Типы изделий"
           value={scope}
           onChange={onChange}
-          error={scope.length === 0 ? 'Выберите хотя бы один тип изделия' : undefined}
+          error={scope.length === 0 ? 'Выбери хотя бы один тип изделия' : undefined}
         >
           <div className={classes.options}>
             {types.map((entry) => (
@@ -74,7 +77,7 @@ export function TemplateEditor({ template, entries, onSave }: TemplateEditorProp
   const [newScope, setNewScope] = useState<TemplateField['scope']>('all')
   const form = useForm({
     initialValues: { label: '' },
-    validate: { label: (value) => (value.trim() ? null : 'Введите название поля') },
+    validate: { label: (value) => (value.trim() ? null : 'Введи название поля') },
   })
   // Live updates replace only a clean view. A dirty draft retains its original revision.
   const canonical = saved && saved.revision > template.revision ? saved : template
@@ -119,7 +122,7 @@ export function TemplateEditor({ template, entries, onSave }: TemplateEditorProp
         (field) => !field.label.trim() || (field.scope !== 'all' && field.scope.length === 0),
       )
     ) {
-      setError('Проверьте названия полей и выбранные типы изделий.')
+      setError('Проверь названия полей и выбранные типы изделий.')
       return
     }
     setSaving(true)
@@ -136,7 +139,7 @@ export function TemplateEditor({ template, entries, onSave }: TemplateEditorProp
       setError(
         failure instanceof Error
           ? failure.message
-          : 'Не удалось сохранить шаблон. Попробуйте ещё раз.',
+          : 'Не удалось сохранить шаблон. Попробуй ещё раз.',
       )
     } finally {
       setSaving(false)
@@ -153,13 +156,16 @@ export function TemplateEditor({ template, entries, onSave }: TemplateEditorProp
   }
 
   return (
-    <SettingsSection className={classes.editor} title="Шаблон новой карточки">
-      <p>Добавьте свои текстовые поля. Существующие украшения сохранят прежний набор полей.</p>
+    <SettingsSection
+      className={classes.editor}
+      title="Шаблон новой карточки"
+      description="Здесь можно добавить или убрать поля, которые можно заполнять при добавлении нового украшения."
+    >
+      <p>Добавь свои текстовые поля. Существующие украшения сохранят прежний набор полей.</p>
 
       {changedElsewhere && (
         <Alert className={classes.message} role="alert" title="Шаблон изменён в другой вкладке">
-          Ваши изменения сохранены в редакторе. Чтобы загрузить новую версию, отмените свои
-          изменения.
+          Твои изменения сохранены в редакторе. Чтобы загрузить новую версию, отмени свои изменения.
         </Alert>
       )}
       {error && (
@@ -168,7 +174,7 @@ export function TemplateEditor({ template, entries, onSave }: TemplateEditorProp
         </Alert>
       )}
       {notice && <p role="status">{notice}</p>}
-      <p className={classes.hint}>Отметьте поля, которые будут видны в новой карточке.</p>
+      <p className={classes.hint}>Отметь поля, которые будут видны в новой карточке.</p>
       <ul className={classes.fields}>
         {fields.map((field) => (
           <li key={field.id} className={classes.field}>
@@ -178,7 +184,7 @@ export function TemplateEditor({ template, entries, onSave }: TemplateEditorProp
                   aria-label={`Название поля «${field.label || 'без названия'}»`}
                   value={field.label}
                   disabled={saving}
-                  error={!field.label.trim() ? 'Введите название поля' : undefined}
+                  error={!field.label.trim() ? 'Введи название поля' : undefined}
                   onChange={(event) => updateField(field.id, { label: event.currentTarget.value })}
                 />
               ) : (

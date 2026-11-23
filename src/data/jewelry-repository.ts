@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { database, type JewelleryDatabase } from './database'
-import { ConflictError, initializeDatabase } from './catalog-repository'
+import { ConflictError, initializeDatabase, readDataGeneration } from './catalog-repository'
 import {
   parseDictionaryEntry,
   parseCardSnapshot,
@@ -39,16 +39,45 @@ export async function readPhoto(id: string, db: JewelleryDatabase = database) {
   if (typeof itemId !== 'string' || !itemId) throw new Error('Повреждены данные фотографии')
   return { ...photoSchema.parse(photo), itemId }
 }
+
+export async function readItemPhotos(
+  itemId: string,
+  photoIds: string[],
+  db: JewelleryDatabase = database,
+) {
+  return db.transaction('r', db.items, db.photos, async () => {
+    const raw = await db.items.get(itemId)
+    if (!raw) throw new Error('Карточка больше недоступна')
+    const item = parseItem(raw)
+    if (
+      !photoIds.length ||
+      photoIds.length > 5 ||
+      new Set(photoIds).size !== photoIds.length ||
+      photoIds.some((id) => !item.photoIds.includes(id))
+    )
+      throw new Error('Фотографии карточки изменились. Открой её заново.')
+    return Promise.all(
+      photoIds.map(async (id) => {
+        const photo = await readPhoto(id, db)
+        if (photo.itemId !== itemId) throw new Error('Фотография не принадлежит этой карточке')
+        return photo
+      }),
+    )
+  })
+}
 export async function saveItem(
   draft: JewelryDraft,
   newPhotos: NewPhoto[],
   db: JewelleryDatabase = database,
+  expectedGeneration?: number,
 ) {
   const photos = newPhotos.map((photo) => photoSchema.parse(photo))
   if (new Set(photos.map((photo) => photo.id)).size !== photos.length)
     throw new Error('Фотографии повторяются')
   await initializeDatabase(db)
-  return db.transaction('rw', db.items, db.photos, db.dictionaries, async () => {
+  return db.transaction('rw', [db.items, db.photos, db.dictionaries, db.restoreState], async () => {
+    if (expectedGeneration !== undefined && expectedGeneration !== (await readDataGeneration(db)))
+      throw new ConflictError()
     const raw = await db.items.get(draft.id)
     const current = raw ? parseItem(raw) : undefined
     if (current ? current.revision !== draft.revision : draft.revision !== 0)
@@ -57,7 +86,7 @@ export async function saveItem(
     const type = entries.find(
       (entry) => entry.kind === 'type' && entry.id === draft.values.typeId && entry.enabled,
     )
-    if (!type) throw new Error('Выберите доступный тип изделия')
+    if (!type) throw new Error('Выбери доступный тип изделия')
     let snapshot = current
       ? changeItemType(current.snapshot, itemValues(current), type).snapshot
       : parseCardSnapshot(draft.snapshot)

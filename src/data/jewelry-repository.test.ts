@@ -5,8 +5,9 @@ import { Blob as NodeBlob } from 'node:buffer'
 import { beforeEach, afterEach, describe, it, expect, vi } from 'vitest'
 import { JewelleryDatabase } from './database'
 import { getCatalog, saveDictionaryEntry, saveTemplate, ConflictError } from './catalog-repository'
-import { saveItem, deleteItem, readItems, readPhoto } from './jewelry-repository'
+import { saveItem, deleteItem, readItems, readPhoto, readItemPhotos } from './jewelry-repository'
 import { buildCardSnapshot } from '../entities/template/model/template'
+import { editableFineness } from '../entities/template/model/material-fineness'
 import {
   changeItemType,
   filterItems,
@@ -53,7 +54,7 @@ async function draft(
         typeId: type,
         materialIds: ['gold-white'],
         stoneIds: ['ruby'],
-        fineness: 'fineness-585',
+        fineness: 'fineness-gold-585',
         weightGrams: '3,25',
         size: type === 'earrings' ? 'small' : type === 'brooch' ? undefined : '16,5',
         notes: '',
@@ -64,6 +65,183 @@ async function draft(
   }
 }
 describe('jewelry transactions', () => {
+  it('reads only the requested card photos in order and rejects foreign or deleted photos', async () => {
+    const input = await draft('ring', [photo(), photo()])
+    const saved = await saveItem(input.draft, input.photos, db)
+    const ids = [...saved.photoIds].reverse()
+    expect((await readItemPhotos(saved.id, ids, db)).map((photo) => photo.id)).toEqual(ids)
+    const other = await draft()
+    const otherItem = await saveItem(other.draft, other.photos, db)
+    await expect(readItemPhotos(saved.id, otherItem.photoIds, db)).rejects.toThrow()
+    await db.photos.delete(ids[0])
+    await expect(readItemPhotos(saved.id, ids, db)).rejects.toThrow()
+  })
+  it('adds pendants on v5 upgrade without changing saved cards, photos or template scopes', async () => {
+    const input = await draft()
+    const saved = await saveItem(input.draft, input.photos, db)
+    const photos = await db.photos.toArray()
+    const catalog = await getCatalog(db)
+    await db.delete()
+    const legacy = new Dexie(db.name)
+    legacy.version(5).stores({
+      templates: 'id',
+      dictionaries: 'id, kind',
+      settings: 'id',
+      items: 'id, typeId, createdAt',
+      photos: 'id, itemId',
+    })
+    await legacy.table('templates').put(catalog.template)
+    await legacy
+      .table('dictionaries')
+      .bulkPut(catalog.entries.filter((entry) => entry.id !== 'pendant'))
+    await legacy.table('items').put(saved)
+    await legacy.table('photos').bulkPut(photos)
+    legacy.close()
+    await db.open()
+    const upgraded = await getCatalog(db)
+    expect(upgraded.entries.find((entry) => entry.id === 'pendant')).toMatchObject({
+      kind: 'type',
+      enabled: true,
+      label: 'Подвески',
+      sizeKind: 'none',
+    })
+    expect(upgraded.template).toEqual(catalog.template)
+    expect(await readItems(db)).toEqual([saved])
+    expect(await (await readPhoto(photos[0].id, db)).blob.text()).toBe('original bytes')
+    const snapshot = buildCardSnapshot(upgraded.template, upgraded.entries, 'pendant')
+    expect(snapshot.fields.some((field) => field.id === 'size')).toBe(false)
+    const pendantPhoto = photo()
+    const pendant = await saveItem(
+      {
+        ...input.draft,
+        id: crypto.randomUUID(),
+        snapshot,
+        values: {
+          ...input.draft.values,
+          typeId: 'pendant',
+          size: undefined,
+          photoIds: [pendantPhoto.id],
+        },
+      },
+      [pendantPhoto],
+      db,
+    )
+    expect(pendant.typeId).toBe('pendant')
+    expect(pendant.size).toBeUndefined()
+  })
+  it('persists independent assays, retains historical labels and removes only the removed material', async () => {
+    const input = await draft()
+    input.draft.values.fineness = undefined
+    input.draft.values.materialIds = ['gold-white', 'gold-red', 'silver']
+    input.draft.values.materialFineness = {
+      'gold-white': 'fineness-gold-585',
+      'gold-red': 'fineness-gold-750',
+      silver: 'fineness-silver-925',
+    }
+    const saved = await saveItem(input.draft, input.photos, db)
+    expect(saved.finenessId).toBeUndefined()
+    db.close()
+    await db.open()
+    const [restored] = await readItems(db)
+    expect(restored.materialFineness).toEqual(input.draft.values.materialFineness)
+    await db.dictionaries.update('fineness-gold-585', { enabled: false, label: 'Изменено' })
+    const updated = await saveItem(
+      {
+        id: saved.id,
+        revision: saved.revision,
+        snapshot: saved.snapshot,
+        values: {
+          ...itemValues(restored),
+          materialIds: ['gold-white', 'silver'],
+          materialFineness: { 'gold-white': 'fineness-gold-585', silver: 'fineness-silver-925' },
+        },
+      },
+      [],
+      db,
+    )
+    expect(updated.materialFineness).toEqual({
+      'gold-white': 'fineness-gold-585',
+      silver: 'fineness-silver-925',
+    })
+    expect(
+      updated.snapshot.fields
+        .find((field) => field.id === 'fineness')
+        ?.options?.find((option) => option.id === 'fineness-gold-585')?.label,
+    ).toBe('585')
+    expect(await db.photos.count()).toBe(1)
+  })
+
+  it.each<Record<string, string>>([
+    { 'gold-white': 'fineness-gold-585' },
+    { 'gold-white': 'fineness-gold-585', silver: 'fineness-gold-750' },
+    { 'gold-white': 'fineness-gold-585', silver: 'unknown' },
+    {
+      'gold-white': 'fineness-gold-585',
+      silver: 'fineness-silver-925',
+      platinum: 'fineness-platinum-950',
+    },
+  ])(
+    'rejects incomplete, incompatible or extraneous material assays: %j',
+    async (materialFineness) => {
+      const input = await draft()
+      input.draft.values = {
+        ...input.draft.values,
+        fineness: undefined,
+        materialIds: ['gold-white', 'silver'],
+        materialFineness,
+      }
+      await expect(saveItem(input.draft, input.photos, db)).rejects.toThrow()
+      expect(await db.items.count()).toBe(0)
+      expect(await db.photos.count()).toBe(0)
+    },
+  )
+
+  it('keeps legacy shared assays readable and converts only unambiguous associations', async () => {
+    const input = await draft()
+    const single = await saveItem(input.draft, input.photos, db)
+    expect(editableFineness(single.snapshot, itemValues(single))).toEqual({
+      'gold-white': 'fineness-gold-585',
+    })
+    const mixedValues = { ...itemValues(single), materialIds: ['gold-white', 'gold-red'] }
+    expect(editableFineness(single.snapshot, mixedValues)).toEqual({})
+    const legacy = await saveItem(
+      { id: single.id, revision: single.revision, snapshot: single.snapshot, values: mixedValues },
+      [],
+      db,
+    )
+    expect((await readItems(db))[0].finenessId).toBe('fineness-gold-585')
+    expect(legacy.materialFineness).toBeUndefined()
+  })
+
+  it('upgrades a v4 database without rewriting ambiguous assays or photo bytes', async () => {
+    const input = await draft()
+    input.draft.values.materialIds = ['gold-white', 'gold-red']
+    const saved = await saveItem(input.draft, input.photos, db)
+    const originalPhoto = await db.photos.get(saved.photoIds[0])
+    const legacyName = 'assay-v4-' + crypto.randomUUID()
+    const old = new Dexie(legacyName)
+    old.version(4).stores({
+      templates: 'id',
+      dictionaries: 'id, kind',
+      settings: 'id',
+      items: 'id, typeId, createdAt',
+      photos: 'id, itemId',
+    })
+    await old.table('items').put(saved)
+    await old.table('photos').put(originalPhoto!)
+    old.close()
+    const upgraded = new JewelleryDatabase(legacyName)
+    try {
+      expect(await readItems(upgraded)).toEqual([saved])
+      expect(upgraded.verno).toBe(8)
+      expect(await (await readPhoto(originalPhoto!.id, upgraded)).blob.text()).toBe(
+        'original bytes',
+      )
+    } finally {
+      await upgraded.delete()
+    }
+  })
+
   it('persists normalized values and unchanged photo bytes across reopen', async () => {
     const input = await draft()
     const item = await saveItem(input.draft, input.photos, db)
@@ -275,7 +453,12 @@ describe('jewelry transactions', () => {
     const migrated = await getCatalog(db)
     expect(migrated.template.revision).toBe(8)
     expect(migrated.template.fields.find((field) => field.id === 'type')?.enabled).toBe(true)
-    expect(migrated.entries.filter((entry) => entry.kind === 'fineness')).toHaveLength(16)
+    expect(
+      migrated.entries.filter((entry) => entry.kind === 'fineness' && entry.enabled),
+    ).toHaveLength(17)
+    expect(
+      migrated.entries.filter((entry) => entry.kind === 'fineness' && !entry.metal),
+    ).toHaveLength(16)
     expect(migrated.entries.find((entry) => entry.id === 'silver')?.enabled).toBe(false)
     db.close()
     await db.open()

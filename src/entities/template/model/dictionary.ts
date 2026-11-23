@@ -10,9 +10,26 @@ const dictionaryEntrySchema = z
     enabled: z.boolean(),
     revision: z.number().int().nonnegative(),
     sizeKind: sizeKindSchema.optional(),
+    metal: z.enum(['gold', 'silver', 'platinum']).optional(),
+    color: z
+      .string()
+      .regex(/^#[0-9a-fA-F]{6}$/)
+      .optional(),
   })
   .strict()
   .superRefine((entry, context) => {
+    if (entry.metal !== undefined && entry.kind !== 'fineness')
+      context.addIssue({
+        code: 'custom',
+        path: ['metal'],
+        message: 'Металл относится только к пробе',
+      })
+    if (entry.color !== undefined && entry.kind !== 'stone')
+      context.addIssue({
+        code: 'custom',
+        path: ['color'],
+        message: 'Цвет относится только к камню',
+      })
     if (entry.id === 'all') {
       context.addIssue({
         code: 'custom',
@@ -21,7 +38,7 @@ const dictionaryEntrySchema = z
       })
     }
     if (entry.kind === 'type' && entry.sizeKind === undefined) {
-      context.addIssue({ code: 'custom', path: ['sizeKind'], message: 'Выберите формат размера' })
+      context.addIssue({ code: 'custom', path: ['sizeKind'], message: 'Выбери формат размера' })
     }
     if (entry.kind !== 'type' && entry.sizeKind !== undefined) {
       context.addIssue({

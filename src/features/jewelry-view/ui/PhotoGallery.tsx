@@ -67,9 +67,7 @@ export function PhotoGallery({
           className={classes.imageButton}
           onClick={onOpen}
           aria-label={
-            onOpen
-              ? 'Открыть фотографию крупно'
-              : 'Фотография, используйте стрелки для переключения'
+            onOpen ? 'Открыть фотографию крупно' : 'Фотография, используй стрелки для переключения'
           }
         >
           <StoredPhoto

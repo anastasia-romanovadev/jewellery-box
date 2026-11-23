@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { ActionIcon, Button, Modal, MultiSelect, NativeSelect, TextInput } from '@mantine/core'
+import { ActionIcon, Button, Modal, TextInput } from '@mantine/core'
 import {
   EMPTY_FILTERS,
   type CollectionFilters as Filters,
@@ -7,6 +7,8 @@ import {
 } from '../../../entities/jewelry/model/item'
 import type { DictionaryEntry } from '../../../entities/template/model/template'
 import classes from './CollectionFilters.module.scss'
+import { StoneLabel } from '../../../entities/template/ui/StoneLabel'
+import { FilterTags } from './FilterTags'
 
 export function CollectionFilters({
   value,
@@ -39,13 +41,21 @@ export function CollectionFilters({
     return [...options.values()]
   }
   const update = (patch: Partial<Filters>) => setDraft({ ...draft, ...patch })
+  function toggle(key: 'materials' | 'stones', id: string) {
+    setDraft((previous) => ({
+      ...previous,
+      [key]: previous[key].includes(id)
+        ? previous[key].filter((value) => value !== id)
+        : [...previous[key], id],
+    }))
+  }
   function rangeError(min: string, max: string) {
     const a = Number(min.replace(',', '.')),
       b = Number(max.replace(',', '.'))
     return (min && (!Number.isFinite(a) || a < 0)) ||
       (max && (!Number.isFinite(b) || b < 0)) ||
       (min && max && a > b)
-      ? 'Проверьте диапазон'
+      ? 'Проверь диапазон'
       : undefined
   }
   const weightError = rangeError(draft.weightMin, draft.weightMax)
@@ -116,30 +126,42 @@ export function CollectionFilters({
             setOpened(false)
           }}
         >
-          <MultiSelect
+          <FilterTags
             label="Металл"
-            data={materials}
-            value={draft.materials}
-            onChange={(materials) => update({ materials })}
+            options={materials}
+            selected={draft.materials}
+            onSelect={(id) => toggle('materials', id)}
           />
-          <MultiSelect
+          <FilterTags
             label="Камни"
-            data={stones}
-            value={draft.stones}
-            onChange={(stones) => update({ stones })}
+            options={stones}
+            renderLabel={(option) => (
+              <StoneLabel
+                label={option.label}
+                color={
+                  entries.find((entry) => entry.id === option.value)?.color ??
+                  items
+                    .flatMap((item) => item.snapshot.stones)
+                    .find((entry) => entry.id === option.value)?.color
+                }
+              />
+            )}
+            selected={draft.stones}
+            onSelect={(id) => toggle('stones', id)}
           />
-          <NativeSelect
+          <FilterTags
             label="Формат размера"
-            data={[
+            options={[
               { value: '', label: 'Любой' },
               { value: 'ring', label: 'Размер кольца' },
               { value: 'length', label: 'Длина, см' },
               { value: 'earring', label: 'Размер серёг' },
             ]}
-            value={draft.sizeKind}
-            onChange={(event) =>
+            selected={[draft.sizeKind]}
+            onSelect={(sizeKind) =>
+              sizeKind !== draft.sizeKind &&
               update({
-                sizeKind: event.currentTarget.value,
+                sizeKind,
                 sizeMin: '',
                 sizeMax: '',
                 earringSize: '',
@@ -147,11 +169,11 @@ export function CollectionFilters({
             }
           />
           {draft.sizeKind === 'earring' ? (
-            <NativeSelect
+            <FilterTags
               label="Размер серёг"
-              value={draft.earringSize}
-              onChange={(event) => update({ earringSize: event.currentTarget.value })}
-              data={[
+              selected={[draft.earringSize]}
+              onSelect={(earringSize) => update({ earringSize })}
+              options={[
                 { value: '', label: 'Любой указанный' },
                 { value: 'small', label: 'Маленькие' },
                 { value: 'medium', label: 'Средние' },

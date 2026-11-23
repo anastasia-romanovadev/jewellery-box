@@ -1,0 +1,73 @@
+.figure {
+  margin: 0;
+  min-width: 0;
+  figcaption {
+    font-weight: 600;
+    margin-bottom: var(--space-4);
+  }
+}
+.scroll {
+  overflow-x: auto;
+  border-radius: var(--radius-small);
+}
+.scroll:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+.chart {
+  display: block;
+  width: 100%;
+  max-height: 420px;
+  text {
+    fill: var(--fg-soft);
+    font: 12px var(--font-family);
+  }
+  .value {
+    fill: var(--fg);
+    font-weight: 600;
+  }
+  .axisTitle {
+    fill: var(--fg);
+    font-weight: 600;
+  }
+}
+.bar {
+  fill: var(--accent);
+}
+.hint {
+  color: var(--fg-soft);
+  font-size: var(--font-size-small);
+  margin: var(--space-2) 0 0;
+}
+.gridLine {
+  stroke: var(--border);
+  stroke-width: 1;
+}
+.table {
+  margin-top: var(--space-4);
+  summary {
+    cursor: pointer;
+    color: var(--fg-soft);
+    min-height: var(--control-size);
+    padding-block: var(--space-2);
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  caption {
+    text-align: left;
+    padding-block: var(--space-2);
+  }
+  td,
+  th {
+    text-align: left;
+    padding: var(--space-2);
+    border-bottom: 1px solid var(--border);
+    overflow-wrap: anywhere;
+  }
+  td:last-child,
+  th:last-child {
+    text-align: right;
+  }
+}

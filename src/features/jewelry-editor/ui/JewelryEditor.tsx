@@ -15,10 +15,13 @@ import {
 } from '../../../entities/jewelry/model/item'
 import { reconcileSelections } from '../../../entities/jewelry/model/selected-options'
 import { saveItem } from '../../../data/jewelry-repository'
+import { database } from '../../../data/database'
 import { ConflictError, storageErrorMessage, type Catalog } from '../../../data/catalog-repository'
-import { BEFORE_NAVIGATE } from '../../../shared/lib/navigation-guard'
+import { BEFORE_NAVIGATE, type NavigationRequest } from '../../../shared/lib/navigation-guard'
+import { DiscardJewelryDialog } from './DiscardJewelryDialog'
 import { JewelryFields } from './JewelryFields'
 import { PhotoEditor } from './PhotoEditor'
+import { editableFineness } from '../../../entities/template/model/material-fineness'
 import classes from './JewelryEditor.module.scss'
 
 export function JewelryEditor({
@@ -52,12 +55,16 @@ export function JewelryEditor({
   )
   const form = useForm<CardValues>({
     initialValues: item
-      ? itemValues(item)
+      ? {
+          ...itemValues(item),
+          fineness: undefined,
+          materialFineness: editableFineness(item.snapshot, itemValues(item)),
+        }
       : {
           typeId: snapshot.typeId,
           materialIds: [],
           stoneIds: [],
-          fineness: '',
+          materialFineness: {},
           weightGrams: '',
           notes: '',
           photoIds: [],
@@ -69,11 +76,17 @@ export function JewelryEditor({
   const [saving, setSaving] = useState(false)
   const [preparing, setPreparing] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [pendingExit, setPendingExit] = useState<NavigationRequest | null>(null)
   const busy = saving || preparing
   useEffect(() => {
     const guard = (event: Event) => {
-      if (busy || (changed && !window.confirm('Выйти без сохранения? Изменения будут потеряны.')))
+      if (busy || changed) {
         event.preventDefault()
+        if (!busy)
+          setPendingExit(
+            (pending) => pending ?? (event as CustomEvent<NavigationRequest>).detail ?? {},
+          )
+      }
     }
     const unload = (event: BeforeUnloadEvent) => {
       if (changed || busy) {
@@ -89,8 +102,9 @@ export function JewelryEditor({
     }
   }, [changed, busy])
   function close() {
-    if (!busy && (!changed || window.confirm('Выйти без сохранения? Изменения будут потеряны.')))
-      onClose()
+    if (busy) return
+    if (changed) setPendingExit({})
+    else onClose()
   }
   function changeType(typeId: string) {
     const type = catalog.entries.find((entry) => entry.id === typeId && entry.kind === 'type')
@@ -124,19 +138,21 @@ export function JewelryEditor({
       const errors = validateCardValues(reconciled, form.values)
       form.setErrors(errors)
       if (Object.keys(errors).length) {
-        setError('Проверьте обязательные поля и формат значений.')
+        setError('Проверь обязательные поля и формат значений.')
         return
       }
       setSaving(true)
       const saved = await saveItem(
         { id, revision: item?.revision ?? 0, snapshot: reconciled, values: form.values },
         photos,
+        database,
+        initialCatalog.generation ?? 0,
       )
       onSaved(saved)
     } catch (reason) {
       setError(
         reason instanceof ConflictError
-          ? 'Карточка изменена или удалена в другой вкладке. Ваши правки остались в форме. Закройте её без сохранения и откройте актуальную запись.'
+          ? 'Карточка изменена или удалена в другой вкладке. Твои правки остались в форме. Закрой её без сохранения и открой актуальную запись.'
           : storageErrorMessage(reason),
       )
     } finally {
@@ -144,61 +160,87 @@ export function JewelryEditor({
     }
   }
   return (
-    <Modal
-      opened
-      onClose={close}
-      fullScreen={mobile}
-      size="lg"
-      title={item ? 'Редактировать украшение' : 'Добавить украшение'}
-      closeButtonProps={{ 'aria-label': 'Закрыть форму', disabled: busy }}
-      closeOnClickOutside={false}
-      closeOnEscape={!busy}
-    >
-      <form
-        className={classes.form}
-        onSubmit={(event) => {
-          event.preventDefault()
-          void save()
-        }}
+    <Modal.Stack>
+      <Modal
+        stackId="jewelry-editor"
+        opened
+        onClose={close}
+        fullScreen={mobile}
+        size="lg"
+        title={item ? 'Редактировать украшение' : 'Добавить украшение'}
+        closeButtonProps={{ 'aria-label': 'Закрыть форму', disabled: busy }}
+        closeOnClickOutside={false}
+        closeOnEscape={!busy}
       >
-        {error && (
-          <Alert role="alert" color="red">
-            {error}
-          </Alert>
-        )}
-        <JewelryFields
-          snapshot={snapshot}
-          entries={catalog.entries}
-          form={form}
-          disabled={busy}
-          onType={changeType}
-          onChanged={() => setChanged(true)}
-          renderPhotos={(label) => (
-            <PhotoEditor
-              label={label}
-              ids={form.values.photoIds ?? []}
-              added={photos}
-              disabled={busy}
-              error={typeof form.errors.photoIds === 'string' ? form.errors.photoIds : undefined}
-              onBusy={setPreparing}
-              onChange={(ids, added) => {
-                form.setFieldValue('photoIds', ids)
-                setPhotos(added)
-                setChanged(true)
-              }}
-            />
+        <form
+          className={classes.form}
+          onSubmit={(event) => {
+            event.preventDefault()
+            void save()
+          }}
+        >
+          {error && (
+            <Alert role="alert" color="red">
+              {error}
+            </Alert>
           )}
-        />
-        {preparing && <p role="status">Проверяем фотографии…</p>}
-        <Group>
-          <Button type="submit" loading={saving} disabled={preparing}>
-            Сохранить украшение
-          </Button>
-          <Button variant="default" disabled={busy} onClick={close}>
-            Отмена
-          </Button>
-        </Group>
-      </form>
-    </Modal>
+          {item?.finenessId &&
+            item.materialFineness === undefined &&
+            !Object.keys(editableFineness(item.snapshot, itemValues(item))).length && (
+              <Alert title="Уточни пробы материалов">
+                Ранее указана общая проба:{' '}
+                {
+                  item.snapshot.fields
+                    .find((field) => field.id === 'fineness')
+                    ?.options?.find((option) => option.id === item.finenessId)?.label
+                }
+                . Выбери пробу отдельно для каждого материала перед сохранением.
+              </Alert>
+            )}
+          <JewelryFields
+            snapshot={snapshot}
+            entries={catalog.entries}
+            previousValues={item ? itemValues(item) : undefined}
+            form={form}
+            disabled={busy}
+            onType={changeType}
+            onChanged={() => setChanged(true)}
+            renderPhotos={(label) => (
+              <PhotoEditor
+                label={label}
+                ids={form.values.photoIds ?? []}
+                added={photos}
+                disabled={busy}
+                error={typeof form.errors.photoIds === 'string' ? form.errors.photoIds : undefined}
+                onBusy={setPreparing}
+                onChange={(ids, added) => {
+                  form.setFieldValue('photoIds', ids)
+                  setPhotos(added)
+                  setChanged(true)
+                }}
+              />
+            )}
+          />
+          {preparing && <p role="status">Проверяю фотографии…</p>}
+          <Group>
+            <Button type="submit" loading={saving} disabled={preparing}>
+              Сохранить украшение
+            </Button>
+            <Button variant="default" disabled={busy} onClick={close}>
+              Отмена
+            </Button>
+          </Group>
+        </form>
+      </Modal>
+      <DiscardJewelryDialog
+        opened={pendingExit !== null}
+        onStay={() => setPendingExit(null)}
+        onDiscard={() => {
+          if (busy) return
+          onClose()
+          pendingExit?.onConfirmed?.()
+        }}
+      />
+    </Modal.Stack>
   )
 }

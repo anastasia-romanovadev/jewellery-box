@@ -16,20 +16,23 @@ const JewelryDetails = lazy(() =>
   })),
 )
 import { useCatalog } from '../../../data/useCatalog'
-import { useItems } from '../../../data/useItems'
+import type { useItems } from '../../../data/useItems'
 import classes from './CollectionPage.module.scss'
+import { CollectionTagline } from './CollectionTagline'
 type CollectionPageProps = {
+  collection: ReturnType<typeof useItems>
   selectedCategory: CategoryFilterId
   isInstallGuideVisible: boolean
   onDismissInstallGuide: () => void
 }
 export function CollectionPage({
+  collection,
   selectedCategory,
   isInstallGuideVisible,
   onDismissInstallGuide,
 }: CollectionPageProps) {
   const { catalog, error: catalogError, retry: retryCatalog } = useCatalog()
-  const { items, error, loading, retry } = useItems()
+  const { items, error, loading, retry } = collection
   const [filters, setFilters] = useState({ ...EMPTY_FILTERS })
   const [editor, setEditor] = useState<{ item?: JewelryItem } | null>(null)
   const [viewed, setViewed] = useState<string | null>(null)
@@ -54,7 +57,7 @@ export function CollectionPage({
     <section className={classes.page} aria-labelledby="collection-title">
       <header className={classes.intro}>
         <h1 id="collection-title">Личная шкатулка</h1>
-        <p>Любимые украшения в одном месте — удобно смотреть и на телефоне, и на компьютере.</p>
+        <CollectionTagline />
       </header>
       {isInstallGuideVisible && <InstallGuide dismiss={onDismissInstallGuide} />}
       <Group justify="space-between">
@@ -94,11 +97,11 @@ export function CollectionPage({
         />
       )}
       {loading ? (
-        <p role="status">Загружаем коллекцию…</p>
+        <p role="status">Веду подсчёт богатств…</p>
       ) : !items.length ? (
-        <p role="status">В шкатулке пока нет украшений. Добавьте первое.</p>
+        <p role="status">Здесь пока пусто. Это явно недоразумение. Надо исправлять!</p>
       ) : !visible.length ? (
-        <p role="status">По выбранным условиям украшений нет. Измените фильтры или категорию.</p>
+        <p role="status">Хм, даже у тебя есть не всё? Странно…</p>
       ) : (
         <CollectionGallery
           items={visible}
@@ -108,7 +111,7 @@ export function CollectionPage({
           }}
         />
       )}
-      <Suspense fallback={<p role="status">Открываем карточку…</p>}>
+      <Suspense fallback={<p role="status">Открываю карточку…</p>}>
         {item && !editor && (
           <JewelryDetails
             key={item.id}

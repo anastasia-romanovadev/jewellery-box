@@ -3,10 +3,12 @@ import classes from './SettingsSection.module.scss'
 
 export function SettingsSection({
   title,
+  description,
   className,
   children,
 }: {
   title: string
+  description?: string
   className: string
   children: ReactNode
 }) {
@@ -20,6 +22,7 @@ export function SettingsSection({
           type="button"
           aria-expanded={opened}
           aria-controls={id}
+          aria-describedby={description ? id + '-description' : undefined}
           onClick={() => setOpened(!opened)}
         >
           <span>{title}</span>
@@ -28,6 +31,11 @@ export function SettingsSection({
           </svg>
         </button>
       </h2>
+      {description && (
+        <p id={id + '-description'} className={classes.description}>
+          {description}
+        </p>
+      )}
       <div id={id} hidden={!opened} className={classes.content}>
         {children}
       </div>

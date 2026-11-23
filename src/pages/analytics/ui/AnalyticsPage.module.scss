@@ -1,0 +1,74 @@
+.page {
+  width: 100%;
+  max-width: 64rem;
+  margin-inline: auto;
+  display: grid;
+  gap: var(--space-5);
+  min-width: 0;
+}
+.intro {
+  h1 {
+    margin: 0 0 var(--space-2);
+    font-size: clamp(2rem, 5vw, 2.7rem);
+    letter-spacing: -0.06em;
+    line-height: 1.1;
+  }
+  p {
+    margin: 0;
+    color: var(--fg-soft);
+  }
+}
+.metals {
+  gap: var(--space-2);
+}
+.summary,
+.chartCard {
+  padding: clamp(1rem, 3vw, 1.75rem);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  background: var(--surface);
+  min-width: 0;
+}
+.summary {
+  background: linear-gradient(135deg, var(--accent-soft), var(--surface));
+  p {
+    margin: 0 0 var(--space-2);
+  }
+}
+.eyebrow {
+  color: var(--fg-soft);
+  font-weight: 600;
+}
+.summary .total {
+  font-size: clamp(2.8rem, 8vw, 4.5rem);
+  line-height: 1.15;
+  letter-spacing: -0.05em;
+  margin-block: var(--space-3);
+  span {
+    font-size: 0.55em;
+  }
+}
+.muted,
+.notes {
+  color: var(--fg-soft);
+}
+.chartCard {
+  display: grid;
+  gap: var(--space-6);
+}
+.notes {
+  font-size: var(--font-size-small);
+  p {
+    margin: 0 0 var(--space-2);
+  }
+}
+.empty {
+  text-align: center;
+  padding-block: var(--space-8);
+  color: var(--fg-soft);
+}
+@media (max-width: 380px) {
+  .metals button {
+    padding-inline: var(--space-2);
+  }
+}

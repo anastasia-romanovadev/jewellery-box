@@ -23,4 +23,8 @@
     color: var(--fg-soft);
     line-height: 1.6;
   }
+
+  p + p {
+    margin-top: var(--space-3);
+  }
 }

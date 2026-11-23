@@ -59,7 +59,7 @@ it('retains both editor drafts across a live read failure, retry loading and rec
   const initialize = vi.spyOn(repository, 'initializeDatabase').mockReturnValueOnce(pending)
   fireEvent.click(screen.getByRole('button', { name: 'Повторить загрузку шаблона' }))
   await waitFor(() => expect(initialize).toHaveBeenCalled())
-  expect(screen.getByRole('status')).toHaveTextContent('Загружаем шаблон')
+  expect(screen.getByRole('status')).toHaveTextContent('Загружаю шаблон')
   assertDrafts()
   read.mockRestore()
   await act(async () => {

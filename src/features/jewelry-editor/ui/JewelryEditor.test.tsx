@@ -10,6 +10,33 @@ import type { JewelryItem } from '../../../entities/jewelry/model/item'
 import { JewelryEditor } from './JewelryEditor'
 
 describe('jewelry editor snapshot presentation', () => {
+  it('keeps an open creation form intact when the template changes, then uses it on next opening', () => {
+    const changed = structuredClone(DEFAULT_TEMPLATE)
+    changed.revision += 1
+    changed.fields = changed.fields.map((field) =>
+      field.id === 'weight' ? { ...field, enabled: false } : field,
+    )
+    const editor = (template: typeof DEFAULT_TEMPLATE) => (
+      <MantineProvider>
+        <JewelryEditor
+          catalog={{ template, entries: DEFAULT_DICTIONARIES }}
+          category="ring"
+          onClose={vi.fn()}
+          onSaved={vi.fn()}
+        />
+      </MantineProvider>
+    )
+    const view = render(editor(DEFAULT_TEMPLATE))
+    fireEvent.change(screen.getByRole('textbox', { name: 'Вес, г' }), {
+      target: { value: '3,5' },
+    })
+    view.rerender(editor(changed))
+    expect(screen.getByRole('textbox', { name: 'Вес, г' })).toHaveValue('3,5')
+    view.unmount()
+    render(editor(changed))
+    expect(screen.queryByRole('textbox', { name: 'Вес, г' })).not.toBeInTheDocument()
+  })
+
   for (const editing of [false, true]) {
     it.each(['ring', 'chain', 'earrings'])(
       `uses saved labels, units and field order when ${editing ? 'editing' : 'creating'} %s`,
@@ -59,7 +86,7 @@ describe('jewelry editor snapshot presentation', () => {
           snapshot,
           materialIds: ['gold-white'],
           stoneIds: [],
-          finenessId: 'fineness-585',
+          finenessId: 'fineness-gold-585',
           weightGrams: 3,
           notes: '',
           customValues: {},
@@ -87,7 +114,15 @@ describe('jewelry editor snapshot presentation', () => {
           name: typeId === 'chain' ? `${labels.size}, см` : labels.size,
         })
         const type = screen.getByRole('combobox', { name: labels.type })
-        expect(screen.getByRole('combobox', { name: labels.fineness })).toBeVisible()
+        if (editing) {
+          expect(
+            screen.getByRole('combobox', { name: `${labels.fineness} — Белое золото` }),
+          ).toHaveValue('fineness-gold-585')
+        } else {
+          expect(
+            screen.queryByRole('combobox', { name: new RegExp(labels.fineness) }),
+          ).not.toBeInTheDocument()
+        }
         expect(screen.getByRole('heading', { name: `${labels.photos} (0/5)` })).toBeVisible()
         for (const [before, after] of [
           [weight, photos],
@@ -137,7 +172,7 @@ describe('jewelry editor snapshot presentation', () => {
     fireEvent.change(screen.getByLabelText('Добавить фотографии из галереи'), {
       target: { files: [new File(['text'], 'notes.txt', { type: 'text/plain' })] },
     })
-    expect(await screen.findByRole('alert')).toHaveTextContent('Выберите файл изображения')
+    expect(await screen.findByRole('alert')).toHaveTextContent('Выбери файл изображения')
     fireEvent.click(screen.getByRole('button', { name: 'Отмена' }))
     expect(confirm).not.toHaveBeenCalled()
     expect(close).toHaveBeenCalledOnce()

@@ -4,6 +4,8 @@ import type {
   DictionaryEntry,
   DictionaryOption,
 } from '../../template/model/template'
+import { dictionaryOption } from '../../template/model/dictionary-options'
+import { selectedFineness } from '../../template/model/material-fineness'
 
 /** New choices use live labels; unchanged choices retain their historical labels. */
 export function reconcileSelections(
@@ -24,8 +26,8 @@ export function reconcileSelections(
       if (retained.includes(id) && merged.has(id)) continue
       const entry = entries.find((entry) => entry.id === id && entry.kind === kind && entry.enabled)
       if (!entry)
-        throw new Error('Выбранный вариант справочника больше недоступен. Выберите другой вариант.')
-      merged.set(id, { id, label: entry.label })
+        throw new Error('Выбранный вариант справочника больше недоступен. Выбери другой вариант.')
+      merged.set(id, dictionaryOption(entry))
     }
     return [...merged.values()]
   }
@@ -43,8 +45,8 @@ export function reconcileSelections(
       field.options = merge(
         'fineness',
         field.options ?? [],
-        values.fineness ? [values.fineness] : [],
-        previous?.fineness ? [previous.fineness] : [],
+        selectedFineness(values),
+        selectedFineness(previous),
       )
   }
   return result
